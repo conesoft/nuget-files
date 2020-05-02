@@ -1,4 +1,6 @@
-﻿using IO = System.IO;
+﻿using System.Collections.Generic;
+using System.Linq;
+using IO = System.IO;
 
 namespace Conesoft.Files
 {
@@ -20,7 +22,7 @@ namespace Conesoft.Files
 
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? new Directory(IO.Path.GetDirectoryName(path)!) : Invalid;
 
-        public Directory SubDirectory(string subdirectory) => new Directory(IO.Path.Combine(path, subdirectory));
+        Directory SubDirectory(string subdirectory) => new Directory(IO.Path.Combine(path, subdirectory));
 
         public File AsFile => new File(this);
 
@@ -31,6 +33,13 @@ namespace Conesoft.Files
         public void Create() => IO.Directory.CreateDirectory(path);
 
         public static Directory From(string path) => new Directory(path);
+
+        public IEnumerable<File> Files => IO.Directory.GetFiles(path, "*").Select(File.From);
+        public IEnumerable<File> Filtered(string filter, bool allDirectories) => IO.Directory.GetFiles(path, filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
+        public IEnumerable<File> OfType(string extension, bool allDirectories) => IO.Directory.GetFiles(path, "*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
+        public IEnumerable<File> AllFiles => IO.Directory.GetFiles(path, "*", IO.SearchOption.AllDirectories).Select(File.From);
+
+        public IEnumerable<Directory> Directories => IO.Directory.GetDirectories(path, "*").Select(Directory.From);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
         public static File operator /(Directory directory, Filename filename) => new File(directory.SubDirectory(filename.FilenameWithExtension));
