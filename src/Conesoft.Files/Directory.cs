@@ -8,7 +8,7 @@ namespace Conesoft.Files
 
         protected readonly string path;
 
-        public Directory(string path)
+        internal Directory(string path)
         {
             this.path = path;
         }
@@ -29,6 +29,8 @@ namespace Conesoft.Files
         public virtual bool Exists => IO.Directory.Exists(path);
 
         public void Create() => IO.Directory.CreateDirectory(path);
+
+        public static Directory From(string path) => new Directory(path);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
         public static File operator /(Directory directory, Filename filename) => new File(directory.SubDirectory(filename.FilenameWithExtension));

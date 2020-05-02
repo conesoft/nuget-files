@@ -8,7 +8,11 @@ namespace Conesoft.Files
 {
     public class File : Directory
     {
-        public File(Directory directoryAsFile) : base(directoryAsFile)
+        internal File(Directory directoryAsFile) : base(directoryAsFile)
+        {
+        }
+
+        private File(string path) : base(path)
         {
         }
 
@@ -44,6 +48,8 @@ namespace Conesoft.Files
             using var stream = IO.File.Create(path);
             await JsonSerializer.SerializeAsync(stream, content, new JsonSerializerOptions { WriteIndented = pretty });
         }
+
+        public static new File From(string path) => new File(path);
 
         public static Filename Name(string filename, string extension) => new Filename(filename, extension);
 
