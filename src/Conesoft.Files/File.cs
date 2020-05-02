@@ -32,7 +32,7 @@ namespace Conesoft.Files
             await IO.File.AppendAllTextAsync(path, content);
         }
 
-        public bool Exists => IO.File.Exists(path);
+        public override bool Exists => IO.File.Exists(path);
 
         public IO.FileInfo Info => new IO.FileInfo(path);
 

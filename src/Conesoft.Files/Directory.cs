@@ -26,6 +26,8 @@ namespace Conesoft.Files
 
         public string Path => path;
 
+        public virtual bool Exists => IO.Directory.Exists(path);
+
         public void Create() => IO.Directory.CreateDirectory(path);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
