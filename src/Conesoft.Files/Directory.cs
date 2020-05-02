@@ -24,6 +24,8 @@ namespace Conesoft.Files
 
         public File AsFile => new File(this);
 
+        public string Path => path;
+
         public void Create() => IO.Directory.CreateDirectory(path);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
