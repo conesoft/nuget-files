@@ -39,7 +39,7 @@ namespace Conesoft.Files
         public IEnumerable<File> OfType(string extension, bool allDirectories) => IO.Directory.GetFiles(path, "*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
         public IEnumerable<File> AllFiles => IO.Directory.GetFiles(path, "*", IO.SearchOption.AllDirectories).Select(File.From);
 
-        public IEnumerable<Directory> Directories => IO.Directory.GetDirectories(path, "*").Select(Directory.From);
+        public IEnumerable<Directory> Directories => IO.Directory.GetDirectories(path, "*").Select(From);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
         public static File operator /(Directory directory, Filename filename) => new File(directory.SubDirectory(filename.FilenameWithExtension));
