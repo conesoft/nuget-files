@@ -51,7 +51,7 @@ namespace Conesoft.Files
 
         public static new File From(string path) => new File(path);
 
-        public static Filename Name(string filename, string extension) => new Filename(filename, extension);
+        public static new Filename Name(string filename, string extension) => new Filename(filename, extension);
 
         public async Task WriteLines(IEnumerable<string> contents)
         {

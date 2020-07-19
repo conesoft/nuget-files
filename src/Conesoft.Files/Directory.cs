@@ -28,6 +28,8 @@ namespace Conesoft.Files
 
         public string Path => path;
 
+        public string Name => IO.Path.GetFileName(path);
+
         public virtual bool Exists => IO.Directory.Exists(path);
 
         public void Create() => IO.Directory.CreateDirectory(path);
