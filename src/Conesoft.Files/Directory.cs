@@ -32,6 +32,8 @@ namespace Conesoft.Files
 
         public virtual bool Exists => IO.Directory.Exists(path);
 
+        public IO.DirectoryInfo Info => new IO.DirectoryInfo(path);
+
         public void Create() => IO.Directory.CreateDirectory(path);
 
         public static Directory From(string path) => new Directory(path);

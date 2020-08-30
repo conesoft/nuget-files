@@ -38,7 +38,7 @@ namespace Conesoft.Files
 
         public override bool Exists => IO.File.Exists(path);
 
-        public IO.FileInfo Info => new IO.FileInfo(path);
+        public new IO.FileInfo Info => new IO.FileInfo(path);
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
 
