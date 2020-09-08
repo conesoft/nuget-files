@@ -23,6 +23,8 @@ namespace Conesoft.Files
             using var stream = IO.File.OpenRead(path);
             return await JsonSerializer.DeserializeAsync<T>(stream, options);
         }
+        
+        public async Task<byte[]> ReadBytes() => await IO.File.ReadAllBytesAsync(path);
 
         public async Task WriteText(string content)
         {
@@ -57,6 +59,12 @@ namespace Conesoft.Files
         {
             Parent.Create();
             await IO.File.WriteAllLinesAsync(path, contents);
+        }
+        
+        public async Task WriteBytes(byte[] contents)
+        {
+            Parent.Create();
+            await IO.File.WriteAllBytesAsync(path, contents);
         }
     }
 }
