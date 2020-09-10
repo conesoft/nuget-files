@@ -7,6 +7,7 @@ namespace Conesoft.Files
     public class Directory
     {
         public static Directory Invalid = new Directory("");
+        public static Directories Common { get; } = new Directories();
 
         protected readonly string path;
 
