@@ -43,6 +43,8 @@ namespace Conesoft.Files
         public new IO.FileInfo Info => new IO.FileInfo(path);
         
         public string NameWithoutExtension => IO.Path.GetFileNameWithoutExtension(path);
+        
+        public override void Delete() => IO.File.Delete(path);
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
 
