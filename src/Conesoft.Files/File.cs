@@ -41,9 +41,11 @@ namespace Conesoft.Files
         public override bool Exists => IO.File.Exists(path);
 
         public new IO.FileInfo Info => new IO.FileInfo(path);
-        
+
+        public string Extension => IO.Path.GetExtension(path);
+
         public string NameWithoutExtension => IO.Path.GetFileNameWithoutExtension(path);
-        
+
         public override void Delete() => IO.File.Delete(path);
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
@@ -56,8 +58,6 @@ namespace Conesoft.Files
         }
 
         public static new File From(string path) => new File(path);
-
-        public static new Filename Name(string filename, string extension) => new Filename(filename, extension);
 
         public async Task WriteLines(IEnumerable<string> contents)
         {
