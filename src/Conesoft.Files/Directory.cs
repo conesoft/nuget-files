@@ -36,6 +36,8 @@ namespace Conesoft.Files
         public IO.DirectoryInfo Info => new IO.DirectoryInfo(path);
 
         public void Create() => IO.Directory.CreateDirectory(path);
+        
+        public virtual void Delete() => IO.Directory.Delete(path);
 
         public static Directory From(string path) => new Directory(path);
 
