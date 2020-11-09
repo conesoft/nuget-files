@@ -8,6 +8,8 @@
             Extension = extension;
         }
 
+        public static Filename From(string name, string extension) => new Filename(name, extension);
+
         public string Name { get; }
         public string Extension { get; }
         public string FilenameWithExtension => Name + "." + Extension;
