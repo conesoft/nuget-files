@@ -16,15 +16,19 @@ namespace Conesoft.Files
         {
         }
 
-        public async Task<string> ReadText() => await IO.File.ReadAllTextAsync(path);
-        public async Task<string[]> ReadLines() => await IO.File.ReadAllLinesAsync(path);
-        public async Task<T> ReadFromJson<T>(JsonSerializerOptions? options = null)
+        public async Task<string?> ReadText() => Exists ? await IO.File.ReadAllTextAsync(path) : null;
+        public async Task<string[]?> ReadLines() => Exists ? await IO.File.ReadAllLinesAsync(path) : null;
+        public async Task<T?> ReadFromJson<T>(JsonSerializerOptions? options = null)
         {
-            using var stream = IO.File.OpenRead(path);
-            return await JsonSerializer.DeserializeAsync<T>(stream, options);
+            if (Exists)
+            {
+                using var stream = IO.File.OpenRead(path);
+                return await JsonSerializer.DeserializeAsync<T>(stream, options);
+            }
+            return default;
         }
         
-        public async Task<byte[]> ReadBytes() => await IO.File.ReadAllBytesAsync(path);
+        public async Task<byte[]?> ReadBytes() => Exists ? await IO.File.ReadAllBytesAsync(path) : null;
 
         public async Task WriteText(string content)
         {
