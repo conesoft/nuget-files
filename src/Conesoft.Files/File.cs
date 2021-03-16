@@ -44,7 +44,7 @@ namespace Conesoft.Files
 
         public override bool Exists => IO.File.Exists(path);
 
-        public new IO.FileInfo Info => new IO.FileInfo(path);
+        public new IO.FileInfo Info => new(path);
 
         public string Extension => IO.Path.GetExtension(path);
 
@@ -61,7 +61,7 @@ namespace Conesoft.Files
             await JsonSerializer.SerializeAsync(stream, content, new JsonSerializerOptions { WriteIndented = pretty });
         }
 
-        public static new File From(string path) => new File(path);
+        public static new File From(string path) => new(path);
 
         public async Task WriteLines(IEnumerable<string> contents)
         {

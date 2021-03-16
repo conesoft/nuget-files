@@ -6,8 +6,8 @@ namespace Conesoft.Files
 {
     public class Directory
     {
-        public static Directory Invalid { get; } = new Directory("");
-        public static Directories Common { get; } = new Directories();
+        public static Directory Invalid { get; } = new("");
+        public static Directories Common { get; } = new();
 
         protected readonly string path;
 
@@ -23,9 +23,9 @@ namespace Conesoft.Files
 
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? new Directory(IO.Path.GetDirectoryName(path)!) : Invalid;
 
-        Directory SubDirectory(string subdirectory) => new Directory(IO.Path.Combine(path, subdirectory));
+        Directory SubDirectory(string subdirectory) => new(IO.Path.Combine(path, subdirectory));
 
-        public File AsFile => new File(this);
+        public File AsFile => new(this);
 
         public string Path => path;
 
@@ -33,13 +33,13 @@ namespace Conesoft.Files
 
         public virtual bool Exists => IO.Directory.Exists(path);
 
-        public IO.DirectoryInfo Info => new IO.DirectoryInfo(path);
+        public IO.DirectoryInfo Info => new(path);
 
         public void Create() => IO.Directory.CreateDirectory(path);
-        
+
         public virtual void Delete() => IO.Directory.Delete(path);
 
-        public static Directory From(string path) => new Directory(path);
+        public static Directory From(string path) => new(path);
 
         public IEnumerable<File> Files => IO.Directory.GetFiles(path, "*").Select(File.From);
         public IEnumerable<File> Filtered(string filter, bool allDirectories) => IO.Directory.GetFiles(path, filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
@@ -49,6 +49,6 @@ namespace Conesoft.Files
         public IEnumerable<Directory> Directories => IO.Directory.GetDirectories(path, "*").Select(From);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
-        public static File operator /(Directory directory, Filename filename) => new File(directory.SubDirectory(filename.FilenameWithExtension));
+        public static File operator /(Directory directory, Filename filename) => new(directory.SubDirectory(filename.FilenameWithExtension));
     }
 }

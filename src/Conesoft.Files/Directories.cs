@@ -1,7 +1,10 @@
-﻿using E = System.Environment;
+﻿using System.ComponentModel;
+using E = System.Environment;
 
 namespace Conesoft.Files
 {
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public class Directories
     {
         static internal Directory FromSpecial(E.SpecialFolder folder) => Directory.From(E.GetFolderPath(folder));
