@@ -5,7 +5,7 @@
         public Filename(string name, string extension)
         {
             Name = name;
-            Extension = extension.StartsWith(".") ? extension.Substring(1) : extension;
+            Extension = extension.StartsWith(".") ? extension[1..] : extension;
         }
 
         public static Filename From(string name, string extension) => new(name, extension);
