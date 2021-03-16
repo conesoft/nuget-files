@@ -27,6 +27,8 @@ namespace Conesoft.Files
             }
             return default;
         }
+
+        public IO.FileStream OpenRead() => IO.File.OpenRead(path);
         
         public async Task<byte[]?> ReadBytes() => Exists ? await IO.File.ReadAllBytesAsync(path) : null;
 
