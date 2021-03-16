@@ -15,6 +15,8 @@ namespace Conesoft.Files
 
     }
 
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public class UserDirectories
     {
         public Directory Local => Directories.FromSpecial(E.SpecialFolder.LocalApplicationData);
