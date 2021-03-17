@@ -11,9 +11,9 @@ namespace Conesoft.Files
     {
         readonly ZipArchive zip;
 
-        internal Zip(File zipFile) : base(zipFile)
+        internal Zip(File zipFile, bool asNewFile) : base(zipFile)
         {
-            zip = new(new IO.FileStream(Path, IO.FileMode.OpenOrCreate), ZipArchiveMode.Update, false);
+            zip = new(new IO.FileStream(Path, asNewFile ? IO.FileMode.Create : IO.FileMode.Open), asNewFile ? ZipArchiveMode.Create : ZipArchiveMode.Read, false);
         }
 
         public byte[] this[string name]

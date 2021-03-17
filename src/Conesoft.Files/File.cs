@@ -77,6 +77,7 @@ namespace Conesoft.Files
             await IO.File.WriteAllBytesAsync(path, contents);
         }
 
-        public Zip AsZip() => new(this);
+        public Zip AsZip() => new(this, false);
+        public Zip AsNewZip() => new(this, true);
     }
 }
