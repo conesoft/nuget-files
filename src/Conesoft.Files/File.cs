@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -24,6 +26,17 @@ namespace Conesoft.Files
             {
                 using var stream = IO.File.OpenRead(path);
                 return await JsonSerializer.DeserializeAsync<T>(stream, options);
+            }
+            return default;
+        }
+
+        public async Task<IEnumerable<T>?> ReadFromCsv<T>(CsvConfiguration? options = null)
+        {
+            if(Exists)
+            {
+                using var stream = new IO.StreamReader(path);
+                using var csv = new CsvReader(stream, options);
+                return await Task.FromResult(csv.GetRecords<T>());
             }
             return default;
         }
@@ -69,6 +82,15 @@ namespace Conesoft.Files
             Parent.Create();
             using var stream = IO.File.Create(path);
             await JsonSerializer.SerializeAsync(stream, content, options);
+        }
+
+        public async Task WriteAsCsv<T>(IEnumerable<T> content, CsvConfiguration? options = null)
+        {
+            Parent.Create();
+            using var stream = new IO.StreamWriter(path);
+            using var csv = new CsvWriter(stream, options);
+            csv.WriteRecords(content);
+            await Task.CompletedTask;
         }
 
         public static new File From(string path) => new(path);
