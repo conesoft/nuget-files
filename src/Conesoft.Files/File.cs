@@ -33,7 +33,7 @@ namespace Conesoft.Files
             return default;
         }
 
-        public async Task<IEnumerable<T>?> ReadFromCsv<T>(CsvConfiguration? options = null)
+        public async Task<T[]?> ReadFromCsv<T>(CsvConfiguration? options = null)
         {
             if(Exists)
             {
@@ -90,7 +90,7 @@ namespace Conesoft.Files
             await JsonSerializer.SerializeAsync(stream, content, options);
         }
 
-        public async Task WriteAsCsv<T>(IEnumerable<T> content, bool append = false, CsvConfiguration? options = null)
+        public async Task WriteAsCsv<T>(T[] content, bool append = false, CsvConfiguration? options = null)
         {
             Parent.Create();
             using var stream = new IO.StreamWriter(path, append, Encoding.UTF8);
