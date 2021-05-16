@@ -16,6 +16,11 @@ namespace Conesoft.Files
             zip = new(new IO.FileStream(Path, asNewFile ? IO.FileMode.Create : IO.FileMode.Open), asNewFile ? ZipArchiveMode.Create : ZipArchiveMode.Read, false);
         }
 
+        public void ExtractTo(Directory target)
+        {
+            ZipFile.ExtractToDirectory(Path, target.Path);
+        }
+
         public byte[] this[string name]
         {
             set

@@ -37,7 +37,9 @@ namespace Conesoft.Files
 
         public void Create() => IO.Directory.CreateDirectory(path);
 
-        public virtual void Delete() => IO.Directory.Delete(path);
+        public virtual void Delete() => IO.Directory.Delete(path, recursive: true);
+
+        public virtual void MoveTo(Directory target) => IO.Directory.Move(Path, target.Path);
 
         public static Directory From(string path) => new(path);
 
