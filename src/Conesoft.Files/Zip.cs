@@ -26,7 +26,7 @@ namespace Conesoft.Files
 
         public void ExtractTo(Directory target)
         {
-            ZipFile.ExtractToDirectory(Path, target.Path);
+            ZipFile.ExtractToDirectory(Path, target.Path, overwriteFiles: true);
         }
 
         public byte[] this[string name]
