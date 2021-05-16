@@ -18,7 +18,7 @@ namespace Conesoft.Files
 
         public Directory(Directory directory)
         {
-            this.path = directory.path;
+            path = directory.path;
         }
 
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? new Directory(IO.Path.GetDirectoryName(path)!) : Invalid;
@@ -37,9 +37,22 @@ namespace Conesoft.Files
 
         public void Create() => IO.Directory.CreateDirectory(path);
 
-        public virtual void Delete() => IO.Directory.Delete(path, recursive: true);
+        public virtual void Delete()
+        {
+            try
+            {
+                IO.Directory.Delete(path, recursive: true);
+            }
+            catch (IO.DirectoryNotFoundException)
+            {
+            }
+        }
 
-        public virtual void MoveTo(Directory target) => IO.Directory.Move(Path, target.Path);
+        public virtual void MoveTo(Directory target)
+        {
+            target.Delete();
+            IO.Directory.Move(Path, target.Path);
+        }
 
         public static Directory From(string path) => new(path);
 
