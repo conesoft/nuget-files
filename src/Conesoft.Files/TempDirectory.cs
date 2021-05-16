@@ -6,7 +6,7 @@ namespace Conesoft.Files
 {
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    class TempDirectory : Directory, IDisposable
+    public class TempDirectory : Directory, IDisposable
     {
         public TempDirectory() : base(CreateTempDirectory())
         {
