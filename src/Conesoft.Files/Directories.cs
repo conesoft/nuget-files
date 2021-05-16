@@ -11,6 +11,8 @@ namespace Conesoft.Files
 
         public Directory Current => Directory.From(E.CurrentDirectory);
 
+        public TempDirectory Temporary => new TempDirectory();
+
         public UserDirectories User { get; } = new UserDirectories();
 
     }
