@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using IO = System.IO;
 
 namespace Conesoft.Files
 {
@@ -16,7 +17,7 @@ namespace Conesoft.Files
             Directory dir;
             do
             {
-                dir = From(System.IO.Path.GetTempPath()) / System.IO.Path.GetFileNameWithoutExtension(System.IO.Path.GetRandomFileName());
+                dir = From(IO.Path.GetTempPath()) / IO.Path.GetFileNameWithoutExtension(IO.Path.GetRandomFileName());
             } while (dir.Exists);
             return dir;
         }
