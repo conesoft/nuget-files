@@ -1,5 +1,7 @@
 # files
 
+[![publish to nuget](https://github.com/conesoft/files/actions/workflows/publish.yml/badge.svg)](https://github.com/conesoft/files/actions/workflows/publish.yml)
+
 ## tiny example
 
 adapted from realworld use
