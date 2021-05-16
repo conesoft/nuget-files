@@ -1,5 +1,10 @@
-﻿using System;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using IO = System.IO;
@@ -24,6 +29,20 @@ namespace Conesoft.Files
             {
                 using var stream = IO.File.OpenRead(path);
                 return await JsonSerializer.DeserializeAsync<T>(stream, options);
+            }
+            return default;
+        }
+
+        public async Task<T[]?> ReadFromCsv<T>(CsvConfiguration? options = null)
+        {
+            if(Exists)
+            {
+                using var stream = new IO.StreamReader(path, Encoding.UTF8);
+                using var csv = options != null ? new CsvReader(stream, options) : new CsvReader(stream, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    Delimiter = ";"
+                });
+                return await Task.FromResult(csv.GetRecords<T>().ToArray());
             }
             return default;
         }
@@ -69,6 +88,18 @@ namespace Conesoft.Files
             Parent.Create();
             using var stream = IO.File.Create(path);
             await JsonSerializer.SerializeAsync(stream, content, options);
+        }
+
+        public async Task WriteAsCsv<T>(T[] content, bool append = false, CsvConfiguration? options = null)
+        {
+            Parent.Create();
+            using var stream = new IO.StreamWriter(path, append, Encoding.UTF8);
+            using var csv = options != null ? new CsvWriter(stream, options) : new CsvWriter(stream, new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                Delimiter = ";"
+            });
+            csv.WriteRecords(content);
+            await Task.CompletedTask;
         }
 
         public static new File From(string path) => new(path);
