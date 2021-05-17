@@ -6,7 +6,7 @@ namespace Conesoft.Files
 {
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public class Zip : File
+    public record Zip : File
     {
         readonly bool asNewFile;
 

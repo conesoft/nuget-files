@@ -4,7 +4,7 @@ using IO = System.IO;
 
 namespace Conesoft.Files
 {
-    public class Directory
+    public record Directory
     {
         public static Directory Invalid { get; } = new("");
         public static Directories Common { get; } = new();
@@ -33,13 +33,13 @@ namespace Conesoft.Files
 
         public string Name => IO.Path.GetFileName(path);
 
-        public virtual bool Exists => IO.Directory.Exists(path);
+        public bool Exists => IO.Directory.Exists(path);
 
         public IO.DirectoryInfo Info => new(path);
 
         public void Create() => IO.Directory.CreateDirectory(path);
 
-        public virtual void Delete()
+        public void Delete()
         {
             try
             {

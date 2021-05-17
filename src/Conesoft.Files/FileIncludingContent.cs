@@ -4,7 +4,7 @@ namespace Conesoft.Files
 {
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public class FileIncludingContent<T> : File
+    public record FileIncludingContent<T> : File
     {
         public FileIncludingContent(File file, T? content) : base(file)
         {

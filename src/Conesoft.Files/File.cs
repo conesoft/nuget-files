@@ -11,15 +11,32 @@ using IO = System.IO;
 
 namespace Conesoft.Files
 {
-    public class File : Directory
+    public record File
     {
-        internal File(Directory directoryAsFile) : base(directoryAsFile)
+        protected readonly string path;
+
+        internal File(Directory directoryAsFile)
         {
+            path = directoryAsFile.Path;
         }
 
-        private File(string path) : base(path)
+        private File(string path)
         {
+            this.path = path;
         }
+
+        public File(File file)
+        {
+            path = file.path;
+        }
+
+        public override string ToString() => $"{Name}: \"{Parent.Path ?? Path}\"";
+
+        public Directory Parent => IO.Path.GetDirectoryName(path) != null ? new Directory(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
+
+        public string Path => path;
+
+        public string Name => IO.Path.GetFileName(path);
 
         public async Task<string?> ReadText() => Exists ? await IO.File.ReadAllTextAsync(path) : null;
         public async Task<string[]?> ReadLines() => Exists ? await IO.File.ReadAllLinesAsync(path) : null;
@@ -63,15 +80,15 @@ namespace Conesoft.Files
             await IO.File.AppendAllTextAsync(path, content);
         }
 
-        public override bool Exists => IO.File.Exists(path);
+        public bool Exists => IO.File.Exists(path);
 
-        public new IO.FileInfo Info => new(path);
+        public IO.FileInfo Info => new(path);
 
         public string Extension => IO.Path.GetExtension(path);
 
         public string NameWithoutExtension => IO.Path.GetFileNameWithoutExtension(path);
 
-        public override void Delete() => IO.File.Delete(path);
+        public void Delete() => IO.File.Delete(path);
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
 
@@ -102,7 +119,7 @@ namespace Conesoft.Files
             await Task.CompletedTask;
         }
 
-        public static new File From(string path) => new(path);
+        public static File From(string path) => new(path);
 
         public async Task WriteLines(IEnumerable<string> contents)
         {
