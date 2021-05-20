@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using IO = System.IO;
 
 namespace Conesoft.Files
@@ -19,6 +21,28 @@ namespace Conesoft.Files
         public Directory(Directory directory)
         {
             path = directory.path;
+        }
+
+        public async IAsyncEnumerable<File[]> Live(string? filter = null)
+        {
+            var fw = new IO.FileSystemWatcher(Path, filter ?? "*");
+            var tcs = new TaskCompletionSource<bool>();
+
+            fw.Created += (_, e) => tcs.SetResult(true);
+            fw.Renamed += (_, e) => tcs.SetResult(true);
+            fw.Changed += (_, e) => tcs.SetResult(true);
+            fw.Deleted += (_, e) => tcs.SetResult(false);
+
+            fw.EnableRaisingEvents = true;
+
+            yield return Filtered(filter ?? "*", allDirectories: false).ToArray();
+
+            while (true)
+            {
+                await tcs.Task;
+                yield return Filtered(filter ?? "*", allDirectories: false).ToArray();
+                tcs = new();
+            }
         }
 
         public override string ToString() => $"{Name}: \"{Parent.Path ?? Path}\"";
