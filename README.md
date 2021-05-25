@@ -18,14 +18,14 @@ await System.IO.File.AppendAllTextAsync(logPath, $"- **{task.GetType().Name}** *
 ```
 
 ## reading/writing objects
-```
+```csharp
 var data = await File.From("some\path.json").ReadFromJson<SomeType>();
 
 File.From("some\other path.json").WriteAsJson(data);
 ```
 
 ## temporary directories
-```
+```csharp
 {
     using var temp = Directory.Common.Temporary();
     
@@ -36,7 +36,7 @@ File.From("some\other path.json").WriteAsJson(data);
 ```
 
 ## watching a folder
-```
+```csharp
 await foreach(var files in Directory.From("some\path"))
 {
     Console.WriteLine($"ALL FILES ({files.All.Length})");
