@@ -22,9 +22,6 @@ namespace Conesoft.Files
             return dir;
         }
 
-        public void Dispose()
-        {
-            Delete();
-        }
+        public void Dispose() => Delete();
     }
 }
