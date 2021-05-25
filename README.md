@@ -37,34 +37,24 @@ File.From("some\other path.json").WriteAsJson(data);
 
 ## watching a folder
 ```csharp
+void PrettyPrint(string title, File[] files)
+{
+    if(files.Length > 0)
+    {
+        Console.WriteLine($"{title} ({files.Length})");
+        foreach(var file in files)
+        {
+            Console.WriteLine(file);
+        }
+        Console.WriteLine();
+    }
+}
+
 await foreach(var files in Directory.From("some\path"))
 {
-    Console.WriteLine($"ALL FILES ({files.All.Length})");
-    foreach(var file in files.All)
-    {
-        Console.WriteLine(file);
-    }
-    Console.WriteLine();
-    
-    Console.WriteLine("NEW FILES ({files.Added.Length})");
-    foreach(var file in files.Added)
-    {
-        Console.WriteLine(file);
-    }
-    Console.WriteLine();
-    
-    Console.WriteLine("CHANGED FILES ({files.Changed.Length})");
-    foreach(var file in files.Changed)
-    {
-        Console.WriteLine(file);
-    }
-    Console.WriteLine();
-    
-    Console.WriteLine("DELETED FILES ({files.Deleted.Length})");
-    foreach(var file in files.Deleted)
-    {
-        Console.WriteLine(file);
-    }
-    Console.WriteLine();
+    PrettyPrint("ALL FILES", files.All);
+    PrettyPrint("ADDED FILES", files.Added);
+    PrettyPrint("CHANGED FILES", files.Changed);
+    PrettyPrint("DELETED FILES", files.Deleted);
 }
 ```
