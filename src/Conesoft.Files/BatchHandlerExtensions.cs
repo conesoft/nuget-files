@@ -24,17 +24,15 @@ namespace Conesoft.Files
         public static async Task<FileIncludingContent<byte[]>[]> ReadBytes(this IEnumerable<File> files)
             => await Task.WhenAll(files.Select(async file => new FileIncludingContent<byte[]>(file, await file.ReadBytes())));
 
-
-
         public static async IAsyncEnumerable<File[]> Live(this Directory directory, string? filter = null)
         {
             var fw = new IO.FileSystemWatcher(directory.Path, filter ?? "*");
             var tcs = new TaskCompletionSource();
 
-            fw.Created += (_, e) => tcs.SetResult();
-            fw.Renamed += (_, e) => tcs.SetResult();
-            fw.Changed += (_, e) => tcs.SetResult();
-            fw.Deleted += (_, e) => tcs.SetResult();
+            fw.Created += (_, e) => tcs.TrySetResult();
+            fw.Renamed += (_, e) => tcs.TrySetResult();
+            fw.Changed += (_, e) => tcs.TrySetResult();
+            fw.Deleted += (_, e) => tcs.TrySetResult();
             fw.EnableRaisingEvents = true;
 
             while (true)
