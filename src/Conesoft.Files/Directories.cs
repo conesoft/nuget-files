@@ -9,9 +9,9 @@ namespace Conesoft.Files
     {
         static internal Directory FromSpecial(E.SpecialFolder folder) => Directory.From(E.GetFolderPath(folder));
 
-        public Directory Current => Directory.From(E.CurrentDirectory);
+        public static Directory Current => Directory.From(E.CurrentDirectory);
 
-        public TempDirectory Temporary => new TempDirectory();
+        public static TempDirectory Temporary => new();
 
         public UserDirectories User { get; } = new UserDirectories();
 
@@ -21,12 +21,12 @@ namespace Conesoft.Files
     [EditorBrowsable(EditorBrowsableState.Never)]
     public class UserDirectories
     {
-        public Directory Local => Directories.FromSpecial(E.SpecialFolder.LocalApplicationData);
-        public Directory Roaming => Directories.FromSpecial(E.SpecialFolder.ApplicationData);
-        public Directory Documents => Directories.FromSpecial(E.SpecialFolder.MyDocuments);
-        public Directory Pictures => Directories.FromSpecial(E.SpecialFolder.MyPictures);
-        public Directory Music => Directories.FromSpecial(E.SpecialFolder.MyMusic);
-        public Directory Videos => Directories.FromSpecial(E.SpecialFolder.MyVideos);
-        public Directory Desktop => Directories.FromSpecial(E.SpecialFolder.DesktopDirectory);
+        public static Directory Local => Directories.FromSpecial(E.SpecialFolder.LocalApplicationData);
+        public static Directory Roaming => Directories.FromSpecial(E.SpecialFolder.ApplicationData);
+        public static Directory Documents => Directories.FromSpecial(E.SpecialFolder.MyDocuments);
+        public static Directory Pictures => Directories.FromSpecial(E.SpecialFolder.MyPictures);
+        public static Directory Music => Directories.FromSpecial(E.SpecialFolder.MyMusic);
+        public static Directory Videos => Directories.FromSpecial(E.SpecialFolder.MyVideos);
+        public static Directory Desktop => Directories.FromSpecial(E.SpecialFolder.DesktopDirectory);
     }
 }
