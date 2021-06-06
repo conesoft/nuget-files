@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using IO = System.IO;
 
@@ -61,7 +62,7 @@ namespace Conesoft.Files
         public IEnumerable<File> Files => IO.Directory.GetFiles(path, "*").Select(File.From);
         public IEnumerable<File> Filtered(string filter, bool allDirectories) => IO.Directory.GetFiles(path, filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
         public IEnumerable<File> OfType(string extension, bool allDirectories) => IO.Directory.GetFiles(path, "*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
-        public IEnumerable<File> AllFiles => IO.Directory.GetFiles(path, "*", IO.SearchOption.AllDirectories).Select(File.From);
+        public IEnumerable<File> AllFiles => Exists ? IO.Directory.GetFiles(path, "*", IO.SearchOption.AllDirectories).Select(File.From) : Array.Empty<File>();
 
         public IEnumerable<Directory> Directories => IO.Directory.GetDirectories(path, "*").Select(From);
 

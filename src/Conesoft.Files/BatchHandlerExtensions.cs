@@ -27,18 +27,20 @@ namespace Conesoft.Files
         public static async IAsyncEnumerable<File[]> Live(this Directory directory, string? filter = null)
         {
             var fw = new IO.FileSystemWatcher(directory.Path, filter ?? "*");
-            var tcs = new TaskCompletionSource();
+            var tcs = new TaskCompletionSource<File[]>();
 
-            fw.Created += (_, e) => tcs.TrySetResult();
-            fw.Renamed += (_, e) => tcs.TrySetResult();
-            fw.Changed += (_, e) => tcs.TrySetResult();
-            fw.Deleted += (_, e) => tcs.TrySetResult();
-            fw.EnableRaisingEvents = true;
-
-            while (true)
+            _ = Task.Run(() =>
             {
-                yield return directory.Filtered(filter ?? "*", allDirectories: false).ToArray();
-                await tcs.Task;
+                while(true)
+                {
+                    tcs.SetResult(directory.Filtered(filter ?? "*", allDirectories: false).ToArray());
+                    fw.WaitForChanged(IO.WatcherChangeTypes.All);
+                }
+            });
+
+            while(true)
+            {
+                yield return await tcs.Task;
                 tcs = new();
             }
         }
