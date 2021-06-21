@@ -5,14 +5,14 @@
     <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>Conesoft.Files</RootNamespace>
-    <Version>1.5.6</Version>
+    <Version>1.5.7</Version>
     <Authors>davepermen</Authors>
     <Company>Conesoft</Company>
-    <PackageIcon>Conesoft.Light.x256.png</PackageIcon>
+    <PackageIcon>Conesoft.Light.withShadow.x256.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Conesoft.Light.x256.png" Pack="true" PackagePath=""/>
+    <None Include="Conesoft.Light.withShadow.x256.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
