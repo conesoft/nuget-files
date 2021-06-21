@@ -47,26 +47,34 @@ namespace Conesoft.Files
             }
         }
 
-        public static async IAsyncEnumerable<(File[] All, File[] Changed, File[] Added, File[] Deleted)> Changes(this IAsyncEnumerable<File[]> liveFiles)
+        public static async IAsyncEnumerable<(File[] All, File[]? Changed, File[]? Added, File[]? Deleted)> Changes(this IAsyncEnumerable<File[]> liveFiles)
         {
             Dictionary<File, DateTime> lastModified = new();
 
             await foreach (var files in liveFiles)
             {
-                Console.WriteLine($"Changed() - {string.Join(", ", files.Select(f => f.NameWithoutExtension).ToArray())}");
                 var added = files.Except(lastModified.Keys).ToArray();
                 var deleted = lastModified.Keys.Except(files).ToArray();
                 var changed = files.Except(added).Where(f => lastModified[f] < f.Info.LastWriteTime).ToArray();
 
                 lastModified = files.ToDictionaryValues(file => file.Info.LastWriteTime);
 
-                //if ((changed.Length | added.Length | deleted.Length) > 0)
+                if ((changed.Length | added.Length | deleted.Length) > 0)
                 {
                     yield return (
                         All: files,
                         Changed: changed,
                         Added: added,
                         Deleted: deleted
+                    );
+                }
+                else
+                {
+                    yield return (
+                        All: files,
+                        Changed: null,
+                        Added: null,
+                        Deleted: null
                     );
                 }
             }

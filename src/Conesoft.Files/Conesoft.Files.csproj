@@ -8,11 +8,11 @@
     <Version>1.5.7</Version>
     <Authors>davepermen</Authors>
     <Company>Conesoft</Company>
-    <PackageIcon>Conesoft.Light.withShadow.x256.png</PackageIcon>
+    <PackageIcon>Conesoft.forNuget.x256.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Conesoft.Light.withShadow.x256.png" Pack="true" PackagePath=""/>
+    <None Include="Conesoft.forNuget.x256.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
@@ -21,3 +21,4 @@
   </ItemGroup>
 
 </Project>
+8
