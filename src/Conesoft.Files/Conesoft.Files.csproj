@@ -8,13 +8,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.5.12</Version>
+    <Version>1.5.13</Version>
     <Authors>davepermen</Authors>
     <Company>Conesoft</Company>
     <PackageIcon>Conesoft.forNuget.x256.png</PackageIcon>
     <PackageProjectUrl>https://github.com/conesoft/files</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/conesoft/files/blob/main/LICENSE</PackageLicenseUrl>
-    <PackageReadmeFile>..\..\README.md</PackageReadmeFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>tiny wrapper around System.IO to make life easier</Description>
     <PackageTags>library dotnet-core</PackageTags>
   </PropertyGroup>
