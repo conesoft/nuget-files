@@ -24,7 +24,7 @@ namespace Conesoft.Files
         public static async Task<FileIncludingContent<byte[]>[]> ReadBytes(this IEnumerable<File> files)
             => await Task.WhenAll(files.Select(async file => new FileIncludingContent<byte[]>(file, await file.ReadBytes())));
 
-        public static async IAsyncEnumerable<File[]> Live(this Directory directory, string? filter = null, int timeout = 2500)
+        public static async IAsyncEnumerable<File[]> Live(this Directory directory, string? filter = null, bool allDirectories = false, int timeout = 2500)
         {
             var fw = new IO.FileSystemWatcher(directory.Path, filter ?? "*");
             var tcs = new TaskCompletionSource<File[]>();
@@ -34,7 +34,7 @@ namespace Conesoft.Files
             {
                 while(true)
                 {
-                    tcs.TrySetResult(directory.Filtered(filter ?? "*", allDirectories: false).ToArray());
+                    tcs.TrySetResult(directory.Filtered(filter ?? "*", allDirectories).ToArray());
                     var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timedout ? timeout : timeout / 10);
                     timedout = result.TimedOut;
                 }
