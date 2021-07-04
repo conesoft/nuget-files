@@ -133,6 +133,31 @@ namespace Conesoft.Files
             await IO.File.WriteAllBytesAsync(path, contents);
         }
 
+        // https://stackoverflow.com/a/41559/1528847
+        public bool Wait(File file)
+        {
+            int numTries = 0;
+            while (true)
+            {
+                ++numTries;
+                try
+                {
+                    using var fs = new IO.FileStream(file.Path, IO.FileMode.Open, IO.FileAccess.ReadWrite, IO.FileShare.None, 100);
+                    fs.ReadByte();
+                    break;
+                }
+                catch (Exception)
+                {
+                    if (numTries > 10)
+                    {
+                        return false;
+                    }
+                    System.Threading.Thread.Sleep(500);
+                }
+            }
+            return true;
+        }
+
         public Zip AsZip() => new(this, false);
         public Zip AsNewZip() => new(this, true);
     }
