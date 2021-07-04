@@ -22,7 +22,7 @@ namespace Conesoft.Files
             path = directory.path;
         }
 
-        public override string ToString() => $"{Name}: \"{Parent.Path ?? Path}\"";
+        public override string ToString() => $"[\"{Name}\" @ \"{Parent.Path ?? Path}\"]";
 
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? new Directory(IO.Path.GetDirectoryName(path)!) : Invalid;
 
