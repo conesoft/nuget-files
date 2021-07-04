@@ -134,7 +134,7 @@ namespace Conesoft.Files
         }
 
         // https://stackoverflow.com/a/41559/1528847
-        public bool Wait(File file)
+        public bool WaitTillReady()
         {
             int numTries = 0;
             while (true)
@@ -142,7 +142,7 @@ namespace Conesoft.Files
                 ++numTries;
                 try
                 {
-                    using var fs = new IO.FileStream(file.Path, IO.FileMode.Open, IO.FileAccess.ReadWrite, IO.FileShare.None, 100);
+                    using var fs = new IO.FileStream(Path, IO.FileMode.Open, IO.FileAccess.ReadWrite, IO.FileShare.None, 100);
                     fs.ReadByte();
                     break;
                 }
