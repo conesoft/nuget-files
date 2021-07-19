@@ -73,5 +73,29 @@ namespace Conesoft.Files
         }
 
         public static Dictionary<TKey, TValue> ToDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue> valueGenerator) where TKey : notnull => keys.ToDictionary(key => key, valueGenerator);
+
+        public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges)> liveFiles)
+        {
+            await foreach (var files in liveFiles)
+            {
+                var dictionary = new Dictionary<string, T>();
+                foreach (var file in files.All)
+                {
+                    try
+                    {
+                        var name = file.NameWithoutExtension;
+                        var value = await file.ReadFromJson<T>();
+                        if (value != null)
+                        {
+                            dictionary.Add(name, value);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    yield return dictionary;
+                }
+            }
+        }
     }
 }
