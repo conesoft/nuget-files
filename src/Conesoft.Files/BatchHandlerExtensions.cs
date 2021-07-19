@@ -78,7 +78,10 @@ namespace Conesoft.Files
         {
             await foreach (var files in liveFiles)
             {
-                var dictionary = new Dictionary<string, T>();
+                var dictionary = new ChangedDictionary<string, T>()
+                {
+                    ThereAreChanges = files.ThereAreChanges
+                };
                 foreach (var file in files.All)
                 {
                     try
@@ -93,9 +96,14 @@ namespace Conesoft.Files
                     catch (Exception)
                     {
                     }
-                    yield return dictionary;
                 }
+                yield return dictionary;
             }
+        }
+
+        public class ChangedDictionary<TKey, TValue> : Dictionary<TKey, TValue> where TKey : notnull
+        {
+            public bool ThereAreChanges { get; set; }
         }
     }
 }
