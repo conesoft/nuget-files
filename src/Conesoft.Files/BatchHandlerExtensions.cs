@@ -74,36 +74,30 @@ namespace Conesoft.Files
 
         public static Dictionary<TKey, TValue> ToDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue> valueGenerator) where TKey : notnull => keys.ToDictionary(key => key, valueGenerator);
 
-        public static async IAsyncEnumerable<ChangedDictionary<string, T>> FromJson<T>(this IAsyncEnumerable<(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges)> liveFiles)
+        public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges)> liveFiles)
         {
             await foreach (var files in liveFiles)
             {
-                var dictionary = new ChangedDictionary<string, T>()
+                if (files.ThereAreChanges)
                 {
-                    ThereAreChanges = files.ThereAreChanges
-                };
-                foreach (var file in files.All)
-                {
-                    try
+                    var dictionary = new Dictionary<string, T>();
+                    foreach (var file in files.All)
                     {
-                        var name = file.NameWithoutExtension;
-                        var value = await file.ReadFromJson<T>();
-                        if (value != null)
+                        try
                         {
-                            dictionary.Add(name, value);
+                            var name = file.NameWithoutExtension;
+                            if(await file.ReadFromJson<T>() is T value)
+                            {
+                                dictionary.Add(name, value);
+                            }
+                        }
+                        catch (Exception)
+                        {
                         }
                     }
-                    catch (Exception)
-                    {
-                    }
+                    yield return dictionary;
                 }
-                yield return dictionary;
             }
-        }
-
-        public class ChangedDictionary<TKey, TValue> : Dictionary<TKey, TValue> where TKey : notnull
-        {
-            public bool ThereAreChanges { get; set; }
         }
     }
 }
