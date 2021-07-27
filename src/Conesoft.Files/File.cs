@@ -44,7 +44,7 @@ namespace Conesoft.Files
         {
             if (Exists)
             {
-                using var stream = IO.File.OpenRead(path);
+                using var stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite | IO.FileShare.Delete, 0x1000, IO.FileOptions.SequentialScan);
                 return await JsonSerializer.DeserializeAsync<T>(stream, options);
             }
             return default;

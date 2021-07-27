@@ -31,15 +31,15 @@ namespace Conesoft.Files
                 IncludeSubdirectories = allDirectories
             };
             var tcs = new TaskCompletionSource<File[]>();
-            bool timedout = false;
+            int timedoutCounter = 0;
 
             _ = Task.Run(() =>
             {
                 while (true)
                 {
                     tcs.TrySetResult(directory.Filtered("*", allDirectories).ToArray());
-                    var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timedout ? timeout : timeout / 10);
-                    timedout = result.TimedOut;
+                    var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timedoutCounter > 0 ? timeout / 10 : timeout);
+                    timedoutCounter = result.TimedOut ? 5 : Math.Max(timedoutCounter - 1, 0);
                 }
             });
 
@@ -80,24 +80,47 @@ namespace Conesoft.Files
             {
                 if (files.ThereAreChanges)
                 {
-                    var dictionary = new Dictionary<string, T>();
-                    foreach (var file in files.All)
-                    {
-                        try
-                        {
-                            var name = file.NameWithoutExtension;
-                            if(await file.ReadFromJson<T>() is T value)
-                            {
-                                dictionary.Add(name, value);
-                            }
-                        }
-                        catch (Exception)
-                        {
-                        }
-                    }
-                    yield return dictionary;
+                    yield return await files.All.ToValidDictionary(f => f.NameWithoutExtension, async f => await f.ReadFromJson<T>());
                 }
             }
+        }
+
+        public static Dictionary<TKey, TValue> ToValidDictionary<T0, TKey, TValue>(this IEnumerable<T0> enumerable, Func<T0, TKey> keySelector, Func<T0, TValue?> valueSelector) where TKey : notnull
+        {
+            Dictionary<TKey, TValue> d = new();
+            foreach (var item in enumerable)
+            {
+                try
+                {
+                    var key = keySelector(item);
+                    var value = valueSelector(item);
+                    if (value != null)
+                    {
+                        d.Add(key, value);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+            return d;
+        }
+
+        public static async Task<Dictionary<TKey, TValue>> ToValidDictionary<T0, TKey, TValue>(this IEnumerable<T0> enumerable, Func<T0, TKey> keySelector, Func<T0, Task<TValue?>> valueSelector) where TKey : notnull
+        {
+            var tasks = enumerable.Select(async item => new { Key = item, Value = await valueSelector(item) }).ToArray();
+            try
+            {
+                await Task.WhenAll(tasks);
+            }
+            catch
+            {
+            }
+            return tasks
+                .Where(t => t.Status == TaskStatus.RanToCompletion)
+                .Select(t => t.Result)
+                .Where(item => item.Value != null)
+                .ToDictionary(item => keySelector(item.Key), item => item.Value!);
         }
     }
 }
