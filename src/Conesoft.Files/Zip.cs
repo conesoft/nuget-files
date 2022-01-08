@@ -1,5 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.IO.Compression;
+using System.Linq;
 using IO = System.IO;
 
 namespace Conesoft.Files
@@ -41,10 +43,15 @@ namespace Conesoft.Files
             get
             {
                 using var zip = Open();
-                using var file = zip.GetEntry(name).Open();
-                using var memory = new IO.MemoryStream();
-                file.CopyTo(memory);
-                return memory.ToArray();
+                var entry = zip.Entries.Where(e => e.Name == name).FirstOrDefault();
+                if(entry != null)
+                {
+                    using var file = entry.Open();
+                    using var memory = new IO.MemoryStream();
+                    file.CopyTo(memory);
+                    return memory.ToArray();
+                }
+                return Array.Empty<byte>();
             }
         }
     }

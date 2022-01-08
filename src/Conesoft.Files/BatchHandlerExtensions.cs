@@ -50,35 +50,42 @@ namespace Conesoft.Files
             }
         }
 
-        public static async IAsyncEnumerable<(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges)> Changes(this IAsyncEnumerable<File[]> liveFiles)
+        public record FileChanges(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges, bool FirstRun);
+
+        public static async IAsyncEnumerable<FileChanges> Changes(this IAsyncEnumerable<File[]> liveFiles)
         {
             Dictionary<File, DateTime> lastModified = new();
 
+            var iterations = 0;
+
             await foreach (var files in liveFiles)
             {
+                iterations++;
+
                 var added = files.Except(lastModified.Keys).ToArray();
                 var deleted = lastModified.Keys.Except(files).ToArray();
                 var changed = files.Except(added).Where(f => lastModified[f] < f.Info.LastWriteTime).ToArray();
 
                 lastModified = files.ToDictionaryValues(file => file.Info.LastWriteTime);
 
-                yield return (
+                yield return new(
                     All: files,
                     Changed: changed,
                     Added: added,
                     Deleted: deleted,
-                    ThereAreChanges: (changed.Length | added.Length | deleted.Length) > 0
+                    ThereAreChanges: (changed.Length | added.Length | deleted.Length) > 0,
+                    FirstRun: iterations == 1
                 );
             }
         }
 
         public static Dictionary<TKey, TValue> ToDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue> valueGenerator) where TKey : notnull => keys.ToDictionary(key => key, valueGenerator);
 
-        public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges)> liveFiles)
+        public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<FileChanges> liveFiles)
         {
             await foreach (var files in liveFiles)
             {
-                if (files.ThereAreChanges)
+                if (files.ThereAreChanges || files.FirstRun)
                 {
                     yield return await files.All.ToValidDictionary(f => f.NameWithoutExtension, async f => await f.ReadFromJson<T>());
                 }
