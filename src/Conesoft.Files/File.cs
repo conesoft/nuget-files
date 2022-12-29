@@ -80,7 +80,7 @@ namespace Conesoft.Files
         {
             Parent.Create();
             using var stream = IO.File.Create(path);
-            await JsonSerializer.SerializeAsync(stream, content, options ?? new JsonSerializerOptions { WriteIndented = pretty });
+            await JsonSerializer.SerializeAsync(stream, content, options ?? new JsonSerializerOptions { WriteIndented = true });
         }
 
         public static File From(string path) => new(path);
