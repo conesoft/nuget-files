@@ -76,19 +76,11 @@ namespace Conesoft.Files
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
 
-        [Obsolete("Use WriteAsJson with own supplied JsonSerializerOptions instead")]
-        public async Task WriteAsJson<T>(T content, bool pretty = false)
-        {
-            Parent.Create();
-            using var stream = IO.File.Create(path);
-            await JsonSerializer.SerializeAsync(stream, content, new JsonSerializerOptions { WriteIndented = pretty });
-        }
-
         public async Task WriteAsJson<T>(T content, JsonSerializerOptions? options = null)
         {
             Parent.Create();
             using var stream = IO.File.Create(path);
-            await JsonSerializer.SerializeAsync(stream, content, options);
+            await JsonSerializer.SerializeAsync(stream, content, options ?? new JsonSerializerOptions { WriteIndented = pretty });
         }
 
         public static File From(string path) => new(path);
@@ -128,6 +120,15 @@ namespace Conesoft.Files
                 }
             }
             return true;
+        }
+        
+        public File WhenReady
+        {
+            get
+            {
+                WaitTillReady();
+                return this;
+            }
         }
 
         public Zip AsZip() => new(this, false);
