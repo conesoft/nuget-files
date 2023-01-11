@@ -43,7 +43,7 @@ namespace Conesoft.Files
             if (Exists)
             {
                 using var stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite | IO.FileShare.Delete, 0x1000, IO.FileOptions.SequentialScan);
-                return await JsonSerializer.DeserializeAsync<T>(stream, options);
+                return await JsonSerializer.DeserializeAsync<T>(stream, options ?? defaultOptions);
             }
             return default;
         }
@@ -80,7 +80,7 @@ namespace Conesoft.Files
         {
             Parent.Create();
             using var stream = IO.File.Create(path);
-            await JsonSerializer.SerializeAsync(stream, content, options ?? new JsonSerializerOptions { WriteIndented = true });
+            await JsonSerializer.SerializeAsync(stream, content, options ?? defaultOptions);
         }
 
         public static File From(string path) => new(path);
@@ -133,5 +133,13 @@ namespace Conesoft.Files
 
         public Zip AsZip() => new(this, false);
         public Zip AsNewZip() => new(this, true);
+        
+                
+        private static JsonSerializerOptions defaultOptions = new JsonSerializerOptions
+        {
+            WriteIntended = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        };
     }
 }
