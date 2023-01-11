@@ -139,6 +139,7 @@ namespace Conesoft.Files
         private static JsonSerializerOptions defaultOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
