@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -73,6 +71,10 @@ namespace Conesoft.Files
 
         public string NameWithoutExtension => IO.Path.GetFileNameWithoutExtension(path);
 
+        public bool IsAlternateDataStream => Name.Contains(':');
+
+        public string? AlternateDataStreamName => IsAlternateDataStream ? Name.Split(':')[1] : null;
+
         public void Delete() => IO.File.Delete(path);
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
@@ -134,6 +136,9 @@ namespace Conesoft.Files
 
         public Zip AsZip() => new(this, false);
         public Zip AsNewZip() => new(this, true);
+
+
+        public File[] AlternateDataStreams => this.GetStreams().ToArray();
         
                 
         private static JsonSerializerOptions defaultOptions = new JsonSerializerOptions
