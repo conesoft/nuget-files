@@ -1,6 +1,9 @@
-# files
+# Conesoft.Files
 
 [![publish to nuget](https://github.com/conesoft/files/actions/workflows/publish.yml/badge.svg)](https://github.com/conesoft/files/actions/workflows/publish.yml)
+
+[![NuGet version (Conesoft.Files)](https://img.shields.io/nuget/v/Conesoft.Files.svg?style=flat-square)](https://www.nuget.org/packages/Conesoft.Files/)
+https://www.nuget.org/packages/Conesoft.Files/
 
 ## tiny example
 
