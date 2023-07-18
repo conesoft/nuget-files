@@ -3,11 +3,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '6.0.x'
-          include-prerelease: true
+      - uses: actions/checkout@main
+      - uses: actions/setup-dotnet@main
       - uses: conesoft/publish-nuget@main
         with:
           NUGET_KEY: ${{secrets.NUGET_KEY}}
