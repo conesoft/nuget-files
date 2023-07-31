@@ -41,14 +41,20 @@ namespace Conesoft.Files
         {
             if (Exists)
             {
-                using var stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite | IO.FileShare.Delete, 0x1000, IO.FileOptions.SequentialScan);
-                return await JsonSerializer.DeserializeAsync<T>(stream, options ?? defaultOptions);
+                try
+                {
+                    using var stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite | IO.FileShare.Delete, 0x1000, IO.FileOptions.SequentialScan);
+                    return await JsonSerializer.DeserializeAsync<T>(stream, options ?? defaultOptions);
+                }
+                catch
+                {
+                }
             }
             return default;
         }
 
         public IO.FileStream OpenRead() => IO.File.OpenRead(path);
-        
+
         public async Task<byte[]?> ReadBytes() => Exists ? await IO.File.ReadAllBytesAsync(path) : null;
 
         public async Task WriteText(string content)
@@ -93,7 +99,7 @@ namespace Conesoft.Files
             Parent.Create();
             await IO.File.WriteAllLinesAsync(path, contents);
         }
-        
+
         public async Task WriteBytes(byte[] contents)
         {
             Parent.Create();
@@ -124,7 +130,7 @@ namespace Conesoft.Files
             }
             return true;
         }
-        
+
         public File WhenReady
         {
             get
@@ -139,9 +145,9 @@ namespace Conesoft.Files
 
 
         public File[] AlternateDataStreams => this.GetStreams().ToArray();
-        
-                
-        private static JsonSerializerOptions defaultOptions = new JsonSerializerOptions
+
+
+        private static readonly JsonSerializerOptions defaultOptions = new()
         {
             WriteIndented = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
