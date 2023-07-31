@@ -52,6 +52,27 @@ namespace Conesoft.Files
             await IO.File.WriteAllTextAsync(path, content);
         }
 
+        public async Task WriteLines(IEnumerable<string> contents)
+        {
+            Parent.Create();
+            await IO.File.WriteAllLinesAsync(path, contents);
+        }
+
+        public async Task WriteBytes(byte[] contents)
+        {
+            Parent.Create();
+            await IO.File.WriteAllBytesAsync(path, contents);
+        }
+
+        public async Task WriteAsJson<T>(T content, JsonSerializerOptions? options = null)
+        {
+            Parent.Create();
+            using var stream = IO.File.Create(path);
+            await JsonSerializer.SerializeAsync(stream, content, options ?? defaultOptions);
+        }
+
+        public IO.FileStream OpenWrite() => IO.File.OpenWrite(path);
+
         public async Task AppendText(string content)
         {
             Parent.Create();
@@ -74,26 +95,7 @@ namespace Conesoft.Files
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
 
-        public async Task WriteAsJson<T>(T content, JsonSerializerOptions? options = null)
-        {
-            Parent.Create();
-            using var stream = IO.File.Create(path);
-            await JsonSerializer.SerializeAsync(stream, content, options ?? defaultOptions);
-        }
-
         public static File From(string path) => new(path);
-
-        public async Task WriteLines(IEnumerable<string> contents)
-        {
-            Parent.Create();
-            await IO.File.WriteAllLinesAsync(path, contents);
-        }
-
-        public async Task WriteBytes(byte[] contents)
-        {
-            Parent.Create();
-            await IO.File.WriteAllBytesAsync(path, contents);
-        }
 
         // https://stackoverflow.com/a/41559/1528847
         public bool WaitTillReady()
