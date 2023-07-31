@@ -16,7 +16,7 @@ namespace Conesoft.Files
         public static Filename FromExtended(string nameWithExtensionAndAlternateDataStream) => new(
             name: IO.Path.GetFileNameWithoutExtension(nameWithExtensionAndAlternateDataStream.Split(":").First()),
             extension: IO.Path.GetExtension(nameWithExtensionAndAlternateDataStream.Split(":").First()),
-            alternateDataStreamName: IO.Path.GetFileName(nameWithExtensionAndAlternateDataStream.Split(":").Length > 1 ? nameWithExtensionAndAlternateDataStream.Split(":")[1] : "")
+            alternateDataStreamName: IO.Path.GetFileName(nameWithExtensionAndAlternateDataStream.Split(":").Length > 1 ? nameWithExtensionAndAlternateDataStream.Split(":")[1] : null)
         );
 
         public string Name { get; }

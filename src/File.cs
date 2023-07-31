@@ -35,27 +35,16 @@ namespace Conesoft.Files
 
         public string Name => IO.Path.GetFileName(path);
 
-        public async Task<string?> ReadText() => Exists ? await IO.File.ReadAllTextAsync(path) : null;
-        public async Task<string[]?> ReadLines() => Exists ? await IO.File.ReadAllLinesAsync(path) : null;
-        public async Task<T?> ReadFromJson<T>(JsonSerializerOptions? options = null)
+        public async Task<string?> ReadText() => await Safe(async () => await IO.File.ReadAllTextAsync(path));
+        public async Task<string[]?> ReadLines() => await Safe(async () => await IO.File.ReadAllLinesAsync(path));
+        public async Task<byte[]?> ReadBytes() => await Safe(async () => await IO.File.ReadAllBytesAsync(path));
+        public async Task<T?> ReadFromJson<T>(JsonSerializerOptions? options = null) => await Safe(async () =>
         {
-            if (Exists)
-            {
-                try
-                {
-                    using var stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite | IO.FileShare.Delete, 0x1000, IO.FileOptions.SequentialScan);
-                    return await JsonSerializer.DeserializeAsync<T>(stream, options ?? defaultOptions);
-                }
-                catch
-                {
-                }
-            }
-            return default;
-        }
+            using var stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite | IO.FileShare.Delete, 0x1000, IO.FileOptions.SequentialScan);
+            return await JsonSerializer.DeserializeAsync<T>(stream, options ?? defaultOptions);
+        });
 
         public IO.FileStream OpenRead() => IO.File.OpenRead(path);
-
-        public async Task<byte[]?> ReadBytes() => Exists ? await IO.File.ReadAllBytesAsync(path) : null;
 
         public async Task WriteText(string content)
         {
@@ -145,6 +134,36 @@ namespace Conesoft.Files
 
 
         public File[] AlternateDataStreams => this.GetStreams().ToArray();
+
+        private T? Safe<T>(Func<T?> func)
+        {
+            if (Exists)
+            {
+                try
+                {
+                    return func();
+                }
+                catch
+                {
+                }
+            }
+            return default;
+        }
+
+        private async Task<T?> Safe<T>(Func<Task<T?>> func)
+        {
+            if (Exists)
+            {
+                try
+                {
+                    return await func();
+                }
+                catch
+                {
+                }
+            }
+            return default;
+        }
 
 
         private static readonly JsonSerializerOptions defaultOptions = new()

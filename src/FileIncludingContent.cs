@@ -14,6 +14,8 @@ namespace Conesoft.Files
         public T Content { get; set; }
     }
 
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public record FileIncludingContentMaybe<T> : File
     {
         public FileIncludingContentMaybe(File file, T? contentMaybe) : base(file)
