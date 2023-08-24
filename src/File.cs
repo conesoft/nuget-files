@@ -98,8 +98,11 @@ namespace Conesoft.Files
         public static File From(string path) => new(path);
 
         // https://stackoverflow.com/a/41559/1528847
-        public bool WaitTillReady()
+        public bool WaitTillReady(int tries = 10, int delayInMilliseconds = 500)
         {
+            const int ERROR_SHARING_VIOLATION = 0x00000020;
+            const int ERROR_LOCK_VIOLATION = 0x00000021;
+
             int numTries = 0;
             while (true)
             {
@@ -110,16 +113,50 @@ namespace Conesoft.Files
                     fs.ReadByte();
                     break;
                 }
-                catch (Exception)
+                catch (IO.IOException e) when ((e.HResult & 0x0000FFFF) == ERROR_SHARING_VIOLATION || (e.HResult & 0x0000FFFF) == ERROR_LOCK_VIOLATION)
                 {
-                    if (numTries > 10)
+                    if (numTries > tries)
                     {
                         return false;
                     }
-                    System.Threading.Thread.Sleep(500);
+                    System.Threading.Thread.Sleep(delayInMilliseconds);
                 }
             }
             return true;
+        }
+
+        public async Task<bool> WaitTillReadyAsync(int tries = 10, int delayInMilliseconds = 500)
+        {
+            const int ERROR_SHARING_VIOLATION = 0x00000020;
+            const int ERROR_LOCK_VIOLATION = 0x00000021;
+
+            int numTries = 0;
+            while (true)
+            {
+                ++numTries;
+                try
+                {
+                    using var fs = new IO.FileStream(Path, IO.FileMode.Open, IO.FileAccess.ReadWrite, IO.FileShare.None, 100);
+                    fs.ReadByte();
+                    break;
+                }
+                catch (IO.IOException e) when ((e.HResult & 0x0000FFFF) == ERROR_SHARING_VIOLATION || (e.HResult & 0x0000FFFF) == ERROR_LOCK_VIOLATION)
+                {
+                    if (numTries > tries)
+                    {
+                        return false;
+                    }
+                }
+
+                await Task.Delay(delayInMilliseconds);
+            }
+            return true;
+        }
+
+        public async Task<File> WhenReadyAsync()
+        {
+            await WaitTillReadyAsync();
+            return this;
         }
 
         public File WhenReady
