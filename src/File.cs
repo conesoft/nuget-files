@@ -81,7 +81,7 @@ namespace Conesoft.Files
 
         public bool Exists => IO.File.Exists(path);
 
-        public IO.FileInfo Info => new(path);
+        public virtual IO.FileInfo Info => new(path);
 
         public string Extension => IO.Path.GetExtension(path);
 
@@ -96,6 +96,8 @@ namespace Conesoft.Files
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
 
         public static File From(string path) => new(path);
+
+        public static File From(IO.FileInfo info) => new FileIncludingInfo(info);
 
         // https://stackoverflow.com/a/41559/1528847
         public bool WaitTillReady(int tries = 10, int delayInMilliseconds = 500)

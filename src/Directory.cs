@@ -60,7 +60,7 @@ namespace Conesoft.Files
         public static Directory From(string path) => new(path);
 
         public IEnumerable<File> Files => IO.Directory.GetFiles(path, "*").Select(File.From);
-        public IEnumerable<File> Filtered(string filter, bool allDirectories) => IO.Directory.GetFiles(path, filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
+        public IEnumerable<File> Filtered(string filter, bool allDirectories) => new IO.DirectoryInfo(path).GetFiles(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
         public IEnumerable<File> OfType(string extension, bool allDirectories) => IO.Directory.GetFiles(path, "*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
         public IEnumerable<File> AllFiles => Exists ? IO.Directory.GetFiles(path, "*", IO.SearchOption.AllDirectories).Select(File.From) : Array.Empty<File>();
 

@@ -57,7 +57,7 @@ namespace Conesoft.Files
 
         public static async IAsyncEnumerable<FileChanges> Changes(this IAsyncEnumerable<File[]> liveFiles)
         {
-            Dictionary<File, DateTime> lastModified = new();
+            Dictionary<File, DateTime> lastModified = [];
 
             var iterations = 0;
 
@@ -97,7 +97,7 @@ namespace Conesoft.Files
 
         public static Dictionary<TKey, TValue> ToValidDictionary<T0, TKey, TValue>(this IEnumerable<T0> enumerable, Func<T0, TKey> keySelector, Func<T0, TValue?> valueSelector) where TKey : notnull
         {
-            Dictionary<TKey, TValue> d = new();
+            Dictionary<TKey, TValue> d = [];
             foreach (var item in enumerable)
             {
                 try
