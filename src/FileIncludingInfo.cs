@@ -10,6 +10,9 @@ namespace Conesoft.Files
             this.info = info;
         }
 
+        public virtual bool Equals(FileIncludingInfo? other) => path == other?.path;
+        override public int GetHashCode() => base.GetHashCode();
+
         public override IO.FileInfo Info => info;
     }
 }

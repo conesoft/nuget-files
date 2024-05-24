@@ -65,11 +65,15 @@ namespace Conesoft.Files
             {
                 iterations++;
 
-                var added = files.Except(lastModified.Keys).ToArray();
-                var deleted = lastModified.Keys.Except(files).ToArray();
+                var added = files.ExceptBy(lastModified.Keys.Select(f => f.Path), f => f.Path).ToArray();
+                var deleted = lastModified.Keys.ExceptBy(files.Select(f => f.Path), f => f.Path).ToArray();
                 var changed = files.Except(added).Where(f => lastModified[f] < f.Info.LastWriteTime).ToArray();
 
                 lastModified = files.ToDictionaryValues(file => file.Info.LastWriteTime);
+
+                Console.WriteLine($"changed.Length: {changed.Length}");
+                Console.WriteLine($"added.Length: {added.Length}");
+                Console.WriteLine($"deleted.Length: {deleted.Length}");
 
                 yield return new(
                     All: files,
