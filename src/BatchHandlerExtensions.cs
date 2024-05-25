@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Conesoft.Tools;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -27,19 +28,22 @@ namespace Conesoft.Files
         static async Task<FileIncludingContent<T>[]> WithContent<T>(this Task<FileIncludingContentMaybe<T>[]> files)
             => (await files).Where(f => f.ContentMaybe != null).Select(f => new FileIncludingContent<T>(f, f.ContentMaybe!)).ToArray();
 
-        public static async IAsyncEnumerable<IEnumerable<File>> Live(this Directory directory, bool allDirectories = false, int timeout = 500)
+        public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
+        public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
+
+        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, int timeout = 500)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories
             };
-            var tcs = new TaskCompletionSource<IEnumerable<File>>();
+            var tcs = new TaskCompletionSource<Entry[]>();
 
             _ = Task.Run(() =>
             {
                 while (true)
                 {
-                    tcs.TrySetResult(directory.Filtered("*", allDirectories));
+                    tcs.TrySetResult(directory.Filtered("*", allDirectories).ToArray());
                     var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timeout);
                 }
             });
@@ -51,24 +55,29 @@ namespace Conesoft.Files
             }
         }
 
-        public record FileChanges(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges, bool FirstRun);
 
-        public static async IAsyncEnumerable<FileChanges> Changes(this IAsyncEnumerable<IEnumerable<File>> liveFiles)
+        public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted, bool ThereAreChanges, bool FirstRun);
+
+        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]> liveEntries)
         {
-            Dictionary<File, DateTime> lastModified = [];
+            Dictionary<Entry, DateTime> lastModified = [];
 
             var iterations = 0;
 
-            await foreach (var files in liveFiles)
+            await foreach (var entries in liveEntries)
             {
                 iterations++;
 
-                var all = files.ToArray();
+                var all = entries;
                 var added = all.Except(lastModified.Keys).ToArray();
                 var deleted = lastModified.Keys.Except(all).ToArray();
-                var changed = all.Except(added).Where(f => lastModified[f] < f.Info.LastWriteTime).ToArray();
+                var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
+                {
+                    DateTime last => lastModified[e] < last,
+                    null => lastModified.ContainsKey(e)
+                }).ToArray();
 
-                lastModified = all.ToDictionaryValues(file => file.Info.LastWriteTime);
+                lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
 
                 yield return new(
                     All: all,
@@ -82,19 +91,20 @@ namespace Conesoft.Files
         }
 
         public static Dictionary<TKey, TValue> ToDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue> valueGenerator) where TKey : notnull => keys.ToDictionary(key => key, valueGenerator);
+        public static Dictionary<TKey, TValue> ToValidDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue?> valueGenerator) where TKey : notnull where TValue : struct => keys.ToValidDictionary(key => key, valueGenerator);
 
-        public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<FileChanges> liveFiles)
-        {
-            await foreach (var files in liveFiles)
-            {
-                if (files.ThereAreChanges || files.FirstRun)
-                {
-                    yield return await files.All.ToValidDictionary(f => f.NameWithoutExtension, async f => await f.ReadFromJson<T>());
-                }
-            }
-        }
+        //public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<FileChanges> liveFiles)
+        //{
+        //    await foreach (var files in liveFiles)
+        //    {
+        //        if (files.ThereAreChanges || files.FirstRun)
+        //        {
+        //            yield return await files.All.ToValidDictionary(f => f.NameWithoutExtension, async f => await f.ReadFromJson<T>());
+        //        }
+        //    }
+        //}
 
-        public static Dictionary<TKey, TValue> ToValidDictionary<T0, TKey, TValue>(this IEnumerable<T0> enumerable, Func<T0, TKey> keySelector, Func<T0, TValue?> valueSelector) where TKey : notnull
+        public static Dictionary<TKey, TValue> ToValidDictionary<T0, TKey, TValue>(this IEnumerable<T0> enumerable, Func<T0, TKey> keySelector, Func<T0, TValue?> valueSelector) where TKey : notnull where TValue : struct
         {
             Dictionary<TKey, TValue> d = [];
             foreach (var item in enumerable)
@@ -105,7 +115,7 @@ namespace Conesoft.Files
                     var value = valueSelector(item);
                     if (value != null)
                     {
-                        d.Add(key, value);
+                        d.Add(key, value.Value);
                     }
                 }
                 catch (Exception)

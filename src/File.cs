@@ -8,32 +8,13 @@ using IO = System.IO;
 
 namespace Conesoft.Files
 {
-    public record File
+    public record File : Entry
     {
-        protected readonly string path;
-
-        internal File(Directory directoryAsFile)
+        private File(string path) : base(path)
         {
-            path = directoryAsFile.Path;
         }
-
-        private File(string path)
-        {
-            this.path = path;
-        }
-
-        public File(File file)
-        {
-            path = file.path;
-        }
-
-        public override string ToString() => $"{Name}: \"{Parent.Path ?? Path}\"";
-
-        public Directory Parent => IO.Path.GetDirectoryName(path) != null ? new Directory(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
-
-        public string Path => path;
-
-        public string Name => IO.Path.GetFileName(path);
+        public static new File From(string path) => new(path);
+        public static File From(IO.FileInfo info) => new FileIncludingInfo(info);
 
         public async Task<string?> ReadText() => await Safe(async () => await IO.File.ReadAllTextAsync(path));
         public async Task<string[]?> ReadLines() => await Safe(async () => await IO.File.ReadAllLinesAsync(path));
@@ -81,7 +62,7 @@ namespace Conesoft.Files
 
         public bool Exists => IO.File.Exists(path);
 
-        public virtual IO.FileInfo Info => new(path);
+        public new virtual IO.FileInfo Info => new(path);
 
         public string Extension => IO.Path.GetExtension(path);
 
@@ -94,10 +75,6 @@ namespace Conesoft.Files
         public void Delete() => IO.File.Delete(path);
 
         public async Task AppendLine(string content) => await AppendText(content + Environment.NewLine);
-
-        public static File From(string path) => new(path);
-
-        public static File From(IO.FileInfo info) => new FileIncludingInfo(info);
 
         // https://stackoverflow.com/a/41559/1528847
         public bool WaitTillReady(int tries = 10, int delayInMilliseconds = 500)
