@@ -1,7 +1,10 @@
-﻿using IO = System.IO;
+﻿using System.ComponentModel;
+using IO = System.IO;
 
 namespace Conesoft.Files
 {
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     internal record FileIncludingInfo : File
     {
         private readonly IO.FileInfo info;

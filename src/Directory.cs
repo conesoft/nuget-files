@@ -36,7 +36,7 @@ namespace Conesoft.Files
 
         public bool Exists => IO.Directory.Exists(path);
 
-        public IO.DirectoryInfo Info => new(path);
+        public virtual IO.DirectoryInfo Info => new(path);
 
         public void Create() => IO.Directory.CreateDirectory(path);
 
@@ -59,12 +59,14 @@ namespace Conesoft.Files
 
         public static Directory From(string path) => new(path);
 
-        public IEnumerable<File> Files => IO.Directory.GetFiles(path, "*").Select(File.From);
-        public IEnumerable<File> Filtered(string filter, bool allDirectories) => new IO.DirectoryInfo(path).GetFiles(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
-        public IEnumerable<File> OfType(string extension, bool allDirectories) => IO.Directory.GetFiles(path, "*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
-        public IEnumerable<File> AllFiles => Exists ? IO.Directory.GetFiles(path, "*", IO.SearchOption.AllDirectories).Select(File.From) : Array.Empty<File>();
+        public static Directory From(IO.DirectoryInfo info) => new DirectoryIncludingInfo(info);
 
-        public IEnumerable<Directory> Directories => IO.Directory.GetDirectories(path, "*").Select(From);
+        public IEnumerable<File> Files => new IO.DirectoryInfo(path).EnumerateFiles().Select(File.From);
+        public IEnumerable<File> Filtered(string filter, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFiles(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
+        public IEnumerable<File> OfType(string extension, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFiles("*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
+        public IEnumerable<File> AllFiles => Exists ? new IO.DirectoryInfo(path).EnumerateFiles("*", IO.SearchOption.AllDirectories).Select(File.From) : [];
+
+        public IEnumerable<Directory> Directories => new IO.DirectoryInfo(path).EnumerateDirectories().Select(From);
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
         public static File operator /(Directory directory, Filename filename) => new(directory.SubDirectory(filename.FilenameWithExtension));

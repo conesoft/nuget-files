@@ -27,22 +27,20 @@ namespace Conesoft.Files
         static async Task<FileIncludingContent<T>[]> WithContent<T>(this Task<FileIncludingContentMaybe<T>[]> files)
             => (await files).Where(f => f.ContentMaybe != null).Select(f => new FileIncludingContent<T>(f, f.ContentMaybe!)).ToArray();
 
-        public static async IAsyncEnumerable<File[]> Live(this Directory directory, bool allDirectories = false, int timeout = 2500)
+        public static async IAsyncEnumerable<IEnumerable<File>> Live(this Directory directory, bool allDirectories = false, int timeout = 500)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories
             };
-            var tcs = new TaskCompletionSource<File[]>();
-            int timedoutCounter = 0;
+            var tcs = new TaskCompletionSource<IEnumerable<File>>();
 
             _ = Task.Run(() =>
             {
                 while (true)
                 {
-                    tcs.TrySetResult(directory.Filtered("*", allDirectories).ToArray());
-                    var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timedoutCounter > 0 ? timeout / 10 : timeout);
-                    timedoutCounter = result.TimedOut ? 5 : Math.Max(timedoutCounter - 1, 0);
+                    tcs.TrySetResult(directory.Filtered("*", allDirectories));
+                    var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timeout);
                 }
             });
 
@@ -55,7 +53,7 @@ namespace Conesoft.Files
 
         public record FileChanges(File[] All, File[]? Changed, File[]? Added, File[]? Deleted, bool ThereAreChanges, bool FirstRun);
 
-        public static async IAsyncEnumerable<FileChanges> Changes(this IAsyncEnumerable<File[]> liveFiles)
+        public static async IAsyncEnumerable<FileChanges> Changes(this IAsyncEnumerable<IEnumerable<File>> liveFiles)
         {
             Dictionary<File, DateTime> lastModified = [];
 
@@ -65,18 +63,15 @@ namespace Conesoft.Files
             {
                 iterations++;
 
-                var added = files.ExceptBy(lastModified.Keys.Select(f => f.Path), f => f.Path).ToArray();
-                var deleted = lastModified.Keys.ExceptBy(files.Select(f => f.Path), f => f.Path).ToArray();
-                var changed = files.Except(added).Where(f => lastModified[f] < f.Info.LastWriteTime).ToArray();
+                var all = files.ToArray();
+                var added = all.Except(lastModified.Keys).ToArray();
+                var deleted = lastModified.Keys.Except(all).ToArray();
+                var changed = all.Except(added).Where(f => lastModified[f] < f.Info.LastWriteTime).ToArray();
 
-                lastModified = files.ToDictionaryValues(file => file.Info.LastWriteTime);
-
-                Console.WriteLine($"changed.Length: {changed.Length}");
-                Console.WriteLine($"added.Length: {added.Length}");
-                Console.WriteLine($"deleted.Length: {deleted.Length}");
+                lastModified = all.ToDictionaryValues(file => file.Info.LastWriteTime);
 
                 yield return new(
-                    All: files,
+                    All: all,
                     Changed: changed,
                     Added: added,
                     Deleted: deleted,
