@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.9.1</Version>
+    <Version>1.9.2</Version>
     <Authors>davepermen</Authors>
     <Company>Conesoft</Company>
     <PackageIcon>Conesoft.forNuget.x256.png</PackageIcon>
@@ -25,12 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Conesoft.Tools" Version="*" />
-    <PackageReference Include="System.Text.Json" Version="*" />
+    <PackageReference Include="Conesoft.Tools" Version="0.0.5" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\nuget-tools\src\Conesoft.Tools.csproj" />
-  </ItemGroup>
-
+	
 </Project>
