@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using IO = System.IO;
 
@@ -31,40 +33,48 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, int timeout = 500)
+        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories
             };
             var tcs = new TaskCompletionSource<Entry[]>();
-
-            _ = Task.Run(() =>
+            var loop = Task.Run(() =>
             {
-                while (true)
+                while (cancellationToken.IsCancellationRequested == false)
                 {
                     tcs.TrySetResult(directory.Filtered("*", allDirectories).ToArray());
-                    var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, timeout);
+                    while (cancellationToken.IsCancellationRequested == false)
+                    {
+                        var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, 250);
+                        if (result.TimedOut == false)
+                        {
+                            break;
+                        }
+                    }
                 }
-            });
+                tcs.TrySetCanceled();
+            }, cancellationToken);
 
-            while (true)
+            while (await tcs.Task.NullIfCancelled() is Entry[] entries)
             {
-                yield return await tcs.Task;
+                yield return entries;
                 tcs = new();
             }
+            await loop;
         }
 
 
         public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted, bool ThereAreChanges, bool FirstRun);
 
-        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]> liveEntries)
+        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]> liveEntries, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             Dictionary<Entry, DateTime> lastModified = [];
 
             var iterations = 0;
 
-            await foreach (var entries in liveEntries)
+            await foreach (var entries in liveEntries.WithCancellation(cancellationToken))
             {
                 iterations++;
 
@@ -78,6 +88,11 @@ namespace Conesoft.Files
                 }).ToArray();
 
                 lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    yield break;
+                }
 
                 yield return new(
                     All: all,
