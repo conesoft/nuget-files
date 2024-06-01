@@ -19,7 +19,7 @@ namespace Conesoft.Files
         public string Name => IO.Path.GetFileName(path);
         public string Path => path;
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? Directory.From(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
-        public override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
+        public sealed override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
 
         public bool IsFile => IO.File.Exists(path);
         public bool IsDirectory => IO.Directory.Exists(path);
