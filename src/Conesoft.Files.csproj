@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.9.3</Version>
+    <Version>1.9.4</Version>
     <Authors>davepermen</Authors>
     <Company>Conesoft</Company>
     <PackageIcon>Conesoft.forNuget.x256.png</PackageIcon>
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Conesoft.Tools" Version="0.0.5" />
+    <PackageReference Include="Conesoft.Tools" Version="0.0.6" />
   </ItemGroup>
 	
 </Project>
