@@ -16,7 +16,7 @@ namespace Conesoft.Files
 
         public virtual IO.FileSystemInfo? Info => IsFile ? AsFile!.Info : (IsDirectory ? AsDirectory!.Info : null);
 
-        public string Name => IO.Path.GetFileName(path);
+        public virtual string Name => IO.Path.GetFileName(path);
         public string Path => path;
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? Directory.From(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
         public sealed override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
