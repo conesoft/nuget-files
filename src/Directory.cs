@@ -15,7 +15,7 @@ namespace Conesoft.Files
         public static new Directory From(string path) => new(path);
         public static Directory From(IO.DirectoryInfo info) => new DirectoryIncludingInfo(info);
 
-        Directory SubDirectory(string subdirectory) => new(IO.Path.Combine(path, subdirectory));
+        protected virtual Directory SubDirectory(string subdirectory) => new(IO.Path.Combine(path, subdirectory));
 
         public bool Exists => IO.Directory.Exists(path);
 
