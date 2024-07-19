@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO.Compression;
 using System.Linq;
 using IO = System.IO;
@@ -51,7 +50,7 @@ namespace Conesoft.Files
                     file.CopyTo(memory);
                     return memory.ToArray();
                 }
-                return Array.Empty<byte>();
+                return [];
             }
         }
     }

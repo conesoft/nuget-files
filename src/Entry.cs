@@ -1,4 +1,5 @@
-﻿using IO = System.IO;
+﻿using System;
+using IO = System.IO;
 
 namespace Conesoft.Files
 {
@@ -14,7 +15,20 @@ namespace Conesoft.Files
         public static Entry From(string path) => new(path);
         public static Entry From(IO.FileSystemInfo info) => new(info.FullName);
 
-        public virtual IO.FileSystemInfo? Info => IsFile ? AsFile!.Info : (IsDirectory ? AsDirectory!.Info : null);
+        public virtual IO.FileSystemInfo? Info
+        {
+            get
+            {
+                try
+                {
+                    return IsFile ? AsFile!.Info : (IsDirectory ? AsDirectory!.Info : null);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+        }
 
         public virtual string Name => IO.Path.GetFileName(path);
         public string Path => path;

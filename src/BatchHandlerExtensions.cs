@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using IO = System.IO;
 
@@ -33,36 +34,36 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories
             };
-            var tcs = new TaskCompletionSource<Entry[]>();
-            var loop = Task.Run(() =>
+            var channel = Channel.CreateBounded<Entry[]>(new BoundedChannelOptions(1)
+            {
+                AllowSynchronousContinuations = false,
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+                SingleWriter = true
+            });
+            Task.Run(async () =>
             {
                 while (cancellationToken.IsCancellationRequested == false)
                 {
-                    tcs.TrySetResult(directory.Filtered("*", allDirectories).ToArray());
                     while (cancellationToken.IsCancellationRequested == false)
                     {
-                        var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, 250);
+                        await channel.Writer.WriteAsync(directory.Filtered("*", allDirectories).ToArray(), cancellationToken);
+                        var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, 10000);
                         if (result.TimedOut == false)
                         {
                             break;
                         }
                     }
                 }
-                tcs.TrySetCanceled();
+                channel.Writer.Complete();
             }, cancellationToken);
-
-            while (await tcs.Task.NullIfCancelled() is Entry[] entries)
-            {
-                yield return entries;
-                tcs = new();
-            }
-            await loop;
+            return channel.Reader.ReadAllAsync(cancellationToken);
         }
 
 
