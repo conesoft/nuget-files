@@ -34,42 +34,39 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-        public static IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static IAsyncEnumerable<Entry[]?> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellationToken = default)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
-                IncludeSubdirectories = allDirectories
+                IncludeSubdirectories = allDirectories,
+                EnableRaisingEvents = true,
             };
-            var channel = Channel.CreateBounded<Entry[]>(new BoundedChannelOptions(1)
+            var channel = Channel.CreateBounded<Entry[]?>(new BoundedChannelOptions(capacity: 1)
             {
                 AllowSynchronousContinuations = false,
                 FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true,
                 SingleWriter = true
             });
-            Task.Run(async () =>
+
+            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null)
             {
-                while (cancellationToken.IsCancellationRequested == false)
-                {
-                    while (cancellationToken.IsCancellationRequested == false)
-                    {
-                        await channel.Writer.WriteAsync(directory.Filtered("*", allDirectories).ToArray(), cancellationToken);
-                        var result = fw.WaitForChanged(IO.WatcherChangeTypes.All, 10000);
-                        if (result.TimedOut == false)
-                        {
-                            break;
-                        }
-                    }
-                }
-                channel.Writer.Complete();
-            }, cancellationToken);
+                await channel.Writer.WriteAsync(directory.Filtered("*", allDirectories).ToArray(), cancellationToken);
+            }
+
+            fw.Changed += NotifyOfChange;
+            fw.Created += NotifyOfChange;
+            fw.Deleted += NotifyOfChange;
+
+            NotifyOfChange();
+
             return channel.Reader.ReadAllAsync(cancellationToken);
         }
 
 
         public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted, bool ThereAreChanges, bool FirstRun);
 
-        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]> liveEntries, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]?> liveEntries, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             Dictionary<Entry, DateTime> lastModified = [];
 
@@ -77,32 +74,35 @@ namespace Conesoft.Files
 
             await foreach (var entries in liveEntries.WithCancellation(cancellationToken))
             {
-                iterations++;
-
-                var all = entries;
-                var added = all.Except(lastModified.Keys).ToArray();
-                var deleted = lastModified.Keys.Except(all).ToArray();
-                var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
+                if (entries != null)
                 {
-                    DateTime last => lastModified[e] < last,
-                    null => lastModified.ContainsKey(e)
-                }).ToArray();
+                    iterations++;
 
-                lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
+                    var all = entries;
+                    var added = all.Except(lastModified.Keys).ToArray();
+                    var deleted = lastModified.Keys.Except(all).ToArray();
+                    var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
+                    {
+                        DateTime last => lastModified[e] < last,
+                        null => lastModified.ContainsKey(e)
+                    }).ToArray();
 
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    yield break;
+                    lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        yield break;
+                    }
+
+                    yield return new(
+                        All: all,
+                        Changed: changed,
+                        Added: added,
+                        Deleted: deleted,
+                        ThereAreChanges: (changed.Length | added.Length | deleted.Length) > 0,
+                        FirstRun: iterations == 1
+                    );
                 }
-
-                yield return new(
-                    All: all,
-                    Changed: changed,
-                    Added: added,
-                    Deleted: deleted,
-                    ThereAreChanges: (changed.Length | added.Length | deleted.Length) > 0,
-                    FirstRun: iterations == 1
-                );
             }
         }
 
