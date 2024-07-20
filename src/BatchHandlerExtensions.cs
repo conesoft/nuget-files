@@ -51,22 +51,13 @@ namespace Conesoft.Files
 
             async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(directory.FilteredArray("*", allDirectories), cancellationToken);
 
-            try
-            {
-                fw.Changed += NotifyOfChange;
-                fw.Created += NotifyOfChange;
-                fw.Deleted += NotifyOfChange;
+            fw.Changed += NotifyOfChange;
+            fw.Created += NotifyOfChange;
+            fw.Deleted += NotifyOfChange;
 
-                NotifyOfChange();
+            NotifyOfChange();
 
-                return channel.Reader.ReadAllAsync(cancellationToken);
-            }
-            finally
-            {
-                fw.Changed -= NotifyOfChange;
-                fw.Created -= NotifyOfChange;
-                fw.Deleted -= NotifyOfChange;
-            }
+            return channel.Reader.ReadAllAsync(cancellationToken);
         }
         public static IAsyncEnumerable<File> Live(this File file, CancellationToken cancellationToken = default)
         {
@@ -84,22 +75,13 @@ namespace Conesoft.Files
 
             async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(file, cancellationToken);
 
-            try
-            {
-                fw.Changed += NotifyOfChange;
-                fw.Created += NotifyOfChange;
-                fw.Deleted += NotifyOfChange;
+            fw.Changed += NotifyOfChange;
+            fw.Created += NotifyOfChange;
+            fw.Deleted += NotifyOfChange;
 
-                NotifyOfChange();
+            NotifyOfChange();
 
-                return channel.Reader.ReadAllAsync(cancellationToken);
-            }
-            finally
-            {
-                fw.Changed -= NotifyOfChange;
-                fw.Created -= NotifyOfChange;
-                fw.Deleted -= NotifyOfChange;
-            }
+            return channel.Reader.ReadAllAsync(cancellationToken);
         }
 
 
