@@ -23,7 +23,7 @@ namespace Conesoft.Files
                 {
                     return IsFile ? AsFile!.Info : (IsDirectory ? AsDirectory!.Info : null);
                 }
-                catch (Exception)
+                catch (NullReferenceException)
                 {
                     return null;
                 }

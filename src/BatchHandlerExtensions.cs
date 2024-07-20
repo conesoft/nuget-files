@@ -34,14 +34,14 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-        public static IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories,
                 EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<Entry[]>(new BoundedChannelOptions(capacity: 1)
+            var channel = Channel.CreateBounded<bool>(new BoundedChannelOptions(capacity: 1)
             {
                 AllowSynchronousContinuations = true,
                 FullMode = BoundedChannelFullMode.DropOldest,
@@ -49,7 +49,7 @@ namespace Conesoft.Files
                 SingleWriter = true
             });
 
-            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(directory.FilteredArray("*", allDirectories), cancellationToken);
+            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(true, cancellationToken);
 
             fw.Changed += NotifyOfChange;
             fw.Created += NotifyOfChange;
@@ -57,8 +57,12 @@ namespace Conesoft.Files
 
             NotifyOfChange();
 
-            return channel.Reader.ReadAllAsync(cancellationToken);
+            await foreach(var _ in channel.Reader.ReadAllAsync(cancellationToken))
+            {
+                yield return directory.FilteredArray("*", allDirectories);
+            }
         }
+
         public static IAsyncEnumerable<File> Live(this File file, CancellationToken cancellationToken = default)
         {
             var fw = new IO.FileSystemWatcher(file.Parent.Path)
