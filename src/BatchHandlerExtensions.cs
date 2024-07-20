@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -34,6 +35,10 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
+        public static IEnumerable<File> Visible(this IEnumerable<File> files) => files.Where(f => f.Info.Attributes.HasFlag(FileAttributes.Hidden) == false);
+        public static IEnumerable<Directory> Visible(this IEnumerable<Directory> directories) => directories.Where(f => f.Info.Attributes.HasFlag(FileAttributes.Hidden) == false);
+
+
         private static readonly BoundedChannelOptions onlyLastMessage = new(1)
         {
             AllowSynchronousContinuations = true,
@@ -63,7 +68,7 @@ namespace Conesoft.Files
 
                 await foreach (var _ in channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    if(cancellationToken.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested)
                     {
                         yield break;
                     }
@@ -75,6 +80,22 @@ namespace Conesoft.Files
                 fw.Changed -= NotifyOfChange;
                 fw.Created -= NotifyOfChange;
                 fw.Deleted -= NotifyOfChange;
+            }
+        }
+
+        public static async IAsyncEnumerable<T> WithSafeCancellation<T>(this IAsyncEnumerable<T> source, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                yield break;
+            }
+            await foreach (var item in source)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    yield break;
+                }
+                yield return item;
             }
         }
 
