@@ -42,7 +42,7 @@ namespace Conesoft.Files
             SingleWriter = true
         };
 
-        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<bool> TrackChangesLive(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var fw = new IO.FileSystemWatcher(directory.Path)
             {
@@ -63,7 +63,7 @@ namespace Conesoft.Files
 
                 await foreach (var _ in channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    yield return directory.FilteredArray("*", allDirectories);
+                    yield return true;
                 }
             }
             finally
@@ -71,6 +71,14 @@ namespace Conesoft.Files
                 fw.Changed -= NotifyOfChange;
                 fw.Created -= NotifyOfChange;
                 fw.Deleted -= NotifyOfChange;
+            }
+        }
+
+        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await foreach(var _ in directory.TrackChangesLive(allDirectories, cancellationToken))
+            {
+                yield return directory.FilteredArray("*", allDirectories);
             }
         }
 
