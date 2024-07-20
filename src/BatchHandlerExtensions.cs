@@ -42,7 +42,7 @@ namespace Conesoft.Files
             SingleWriter = true
         };
 
-        public static async IAsyncEnumerable<bool> TrackChangesLive(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var fw = new IO.FileSystemWatcher(directory.Path)
             {
@@ -74,23 +74,15 @@ namespace Conesoft.Files
             }
         }
 
-        public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            await foreach(var _ in directory.TrackChangesLive(allDirectories, cancellationToken))
-            {
-                yield return directory.FilteredArray("*", allDirectories);
-            }
-        }
-
-        public static async IAsyncEnumerable<File> Live(this File file, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<bool> Live(this File file, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var fw = new IO.FileSystemWatcher(file.Parent.Path)
             {
                 EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<File>(onlyLastMessage);
+            var channel = Channel.CreateBounded<bool>(onlyLastMessage);
 
-            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(file, cancellationToken);
+            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(true, cancellationToken);
 
             try
             {
@@ -100,9 +92,9 @@ namespace Conesoft.Files
 
                 NotifyOfChange();
 
-                await foreach (var f in channel.Reader.ReadAllAsync(cancellationToken))
+                await foreach (var _ in channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    yield return f;
+                    yield return true;
                 };
             }
             finally
@@ -116,13 +108,13 @@ namespace Conesoft.Files
 
         public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted);
 
-        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]> liveEntries, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<EntryChanges> Changes(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             Dictionary<Entry, DateTime> lastModified = [];
 
-            await foreach (var entries in liveEntries.WithCancellation(cancellationToken))
+            await foreach (var _ in directory.Live(allDirectories, cancellationToken))
             {
-                var all = entries;
+                var all = directory.FilteredArray("*", allDirectories);
                 var added = all.Except(lastModified.Keys).ToArray();
                 var deleted = lastModified.Keys.Except(all).ToArray();
                 var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
@@ -149,17 +141,6 @@ namespace Conesoft.Files
 
         public static Dictionary<TKey, TValue> ToDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue> valueGenerator) where TKey : notnull => keys.ToDictionary(key => key, valueGenerator);
         public static Dictionary<TKey, TValue> ToValidDictionaryValues<TKey, TValue>(this IEnumerable<TKey> keys, Func<TKey, TValue?> valueGenerator) where TKey : notnull where TValue : struct => keys.ToValidDictionary(key => key, valueGenerator);
-
-        //public static async IAsyncEnumerable<Dictionary<string, T>> FromJson<T>(this IAsyncEnumerable<FileChanges> liveFiles)
-        //{
-        //    await foreach (var files in liveFiles)
-        //    {
-        //        if (files.ThereAreChanges || files.FirstRun)
-        //        {
-        //            yield return await files.All.ToValidDictionary(f => f.NameWithoutExtension, async f => await f.ReadFromJson<T>());
-        //        }
-        //    }
-        //}
 
         public static Dictionary<TKey, TValue> ToValidDictionary<T0, TKey, TValue>(this IEnumerable<T0> enumerable, Func<T0, TKey> keySelector, Func<T0, TValue?> valueSelector) where TKey : notnull where TValue : struct
         {
