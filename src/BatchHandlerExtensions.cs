@@ -34,7 +34,7 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-        private static BoundedChannelOptions OnlyLastMessage = new(1)
+        private static readonly BoundedChannelOptions onlyLastMessage = new(1)
         {
             AllowSynchronousContinuations = true,
             FullMode = BoundedChannelFullMode.DropOldest,
@@ -49,7 +49,7 @@ namespace Conesoft.Files
                 IncludeSubdirectories = allDirectories,
                 EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<bool>(OnlyLastMessage);
+            var channel = Channel.CreateBounded<bool>(onlyLastMessage);
 
             async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(true, cancellationToken);
 
@@ -74,13 +74,13 @@ namespace Conesoft.Files
             }
         }
 
-        public static async IAsyncEnumerable<File> Live(this File file, CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<File> Live(this File file, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var fw = new IO.FileSystemWatcher(file.Parent.Path)
             {
                 EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<File>(OnlyLastMessage);
+            var channel = Channel.CreateBounded<File>(onlyLastMessage);
 
             async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(file, cancellationToken);
 
