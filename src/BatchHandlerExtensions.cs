@@ -34,75 +34,105 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-        public static IAsyncEnumerable<Entry[]?> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellationToken = default)
+        public static IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellationToken = default)
         {
             var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories,
-                EnableRaisingEvents = true,
+                EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<Entry[]?>(new BoundedChannelOptions(capacity: 1)
+            var channel = Channel.CreateBounded<Entry[]>(new BoundedChannelOptions(capacity: 1)
             {
-                AllowSynchronousContinuations = false,
+                AllowSynchronousContinuations = true,
                 FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true,
                 SingleWriter = true
             });
 
-            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null)
+            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(directory.FilteredArray("*", allDirectories), cancellationToken);
+
+            try
             {
-                await channel.Writer.WriteAsync(directory.Filtered("*", allDirectories).ToArray(), cancellationToken);
+                fw.Changed += NotifyOfChange;
+                fw.Created += NotifyOfChange;
+                fw.Deleted += NotifyOfChange;
+
+                NotifyOfChange();
+
+                return channel.Reader.ReadAllAsync(cancellationToken);
             }
+            finally
+            {
+                fw.Changed -= NotifyOfChange;
+                fw.Created -= NotifyOfChange;
+                fw.Deleted -= NotifyOfChange;
+            }
+        }
+        public static IAsyncEnumerable<File> Live(this File file, CancellationToken cancellationToken = default)
+        {
+            var fw = new IO.FileSystemWatcher(file.Parent.Path)
+            {
+                EnableRaisingEvents = true
+            };
+            var channel = Channel.CreateBounded<File>(new BoundedChannelOptions(capacity: 1)
+            {
+                AllowSynchronousContinuations = true,
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+                SingleWriter = true
+            });
 
-            fw.Changed += NotifyOfChange;
-            fw.Created += NotifyOfChange;
-            fw.Deleted += NotifyOfChange;
+            async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(file, cancellationToken);
 
-            NotifyOfChange();
+            try
+            {
+                fw.Changed += NotifyOfChange;
+                fw.Created += NotifyOfChange;
+                fw.Deleted += NotifyOfChange;
 
-            return channel.Reader.ReadAllAsync(cancellationToken);
+                NotifyOfChange();
+
+                return channel.Reader.ReadAllAsync(cancellationToken);
+            }
+            finally
+            {
+                fw.Changed -= NotifyOfChange;
+                fw.Created -= NotifyOfChange;
+                fw.Deleted -= NotifyOfChange;
+            }
         }
 
 
-        public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted, bool ThereAreChanges, bool FirstRun);
+        public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted);
 
-        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]?> liveEntries, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<EntryChanges> Changes(this IAsyncEnumerable<Entry[]> liveEntries, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             Dictionary<Entry, DateTime> lastModified = [];
 
-            var iterations = 0;
-
             await foreach (var entries in liveEntries.WithCancellation(cancellationToken))
             {
-                if (entries != null)
+                var all = entries;
+                var added = all.Except(lastModified.Keys).ToArray();
+                var deleted = lastModified.Keys.Except(all).ToArray();
+                var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
                 {
-                    iterations++;
+                    DateTime last => lastModified[e] < last,
+                    null => lastModified.ContainsKey(e)
+                }).ToArray();
 
-                    var all = entries;
-                    var added = all.Except(lastModified.Keys).ToArray();
-                    var deleted = lastModified.Keys.Except(all).ToArray();
-                    var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
-                    {
-                        DateTime last => lastModified[e] < last,
-                        null => lastModified.ContainsKey(e)
-                    }).ToArray();
+                lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
 
-                    lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
-
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        yield break;
-                    }
-
-                    yield return new(
-                        All: all,
-                        Changed: changed,
-                        Added: added,
-                        Deleted: deleted,
-                        ThereAreChanges: (changed.Length | added.Length | deleted.Length) > 0,
-                        FirstRun: iterations == 1
-                    );
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    yield break;
                 }
+
+                yield return new(
+                    All: all,
+                    Changed: changed,
+                    Added: added,
+                    Deleted: deleted
+                );
             }
         }
 

@@ -46,6 +46,8 @@ namespace Conesoft.Files
         public IEnumerable<Directory> FilteredDirectories(string filter, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateDirectories(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(Directory.From);
         public IEnumerable<Entry> Filtered(string filter, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFileSystemInfos(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(Entry.From);
 
+        public Entry[] FilteredArray(string filter, bool allDirectories) => new IO.DirectoryInfo(path).GetFileSystemInfos(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(Entry.From).ToArray();
+
         public IEnumerable<File> OfType(string extension, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFiles("*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
         public virtual IEnumerable<File> AllFiles => Exists ? new IO.DirectoryInfo(path).EnumerateFiles("*", IO.SearchOption.AllDirectories).Select(File.From) : [];
 
