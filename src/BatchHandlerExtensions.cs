@@ -63,6 +63,10 @@ namespace Conesoft.Files
 
                 await foreach (var _ in channel.Reader.ReadAllAsync(cancellationToken))
                 {
+                    if(cancellationToken.IsCancellationRequested)
+                    {
+                        yield break;
+                    }
                     yield return true;
                 }
             }
@@ -94,6 +98,10 @@ namespace Conesoft.Files
 
                 await foreach (var _ in channel.Reader.ReadAllAsync(cancellationToken))
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        yield break;
+                    }
                     yield return true;
                 };
             }
