@@ -34,58 +34,75 @@ namespace Conesoft.Files
         public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
         public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
+        private static BoundedChannelOptions OnlyLastMessage = new(1)
+        {
+            AllowSynchronousContinuations = true,
+            FullMode = BoundedChannelFullMode.DropOldest,
+            SingleReader = true,
+            SingleWriter = true
+        };
+
         public static async IAsyncEnumerable<Entry[]> Live(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var fw = new IO.FileSystemWatcher(directory.Path)
+            using var fw = new IO.FileSystemWatcher(directory.Path)
             {
                 IncludeSubdirectories = allDirectories,
                 EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<bool>(new BoundedChannelOptions(capacity: 1)
-            {
-                AllowSynchronousContinuations = true,
-                FullMode = BoundedChannelFullMode.DropOldest,
-                SingleReader = true,
-                SingleWriter = true
-            });
+            var channel = Channel.CreateBounded<bool>(OnlyLastMessage);
 
             async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(true, cancellationToken);
 
-            fw.Changed += NotifyOfChange;
-            fw.Created += NotifyOfChange;
-            fw.Deleted += NotifyOfChange;
-
-            NotifyOfChange();
-
-            await foreach(var _ in channel.Reader.ReadAllAsync(cancellationToken))
+            try
             {
-                yield return directory.FilteredArray("*", allDirectories);
+                fw.Changed += NotifyOfChange;
+                fw.Created += NotifyOfChange;
+                fw.Deleted += NotifyOfChange;
+
+                NotifyOfChange();
+
+                await foreach (var _ in channel.Reader.ReadAllAsync(cancellationToken))
+                {
+                    yield return directory.FilteredArray("*", allDirectories);
+                }
+            }
+            finally
+            {
+                fw.Changed -= NotifyOfChange;
+                fw.Created -= NotifyOfChange;
+                fw.Deleted -= NotifyOfChange;
             }
         }
 
-        public static IAsyncEnumerable<File> Live(this File file, CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<File> Live(this File file, CancellationToken cancellationToken = default)
         {
-            var fw = new IO.FileSystemWatcher(file.Parent.Path)
+            using var fw = new IO.FileSystemWatcher(file.Parent.Path)
             {
                 EnableRaisingEvents = true
             };
-            var channel = Channel.CreateBounded<File>(new BoundedChannelOptions(capacity: 1)
-            {
-                AllowSynchronousContinuations = true,
-                FullMode = BoundedChannelFullMode.DropOldest,
-                SingleReader = true,
-                SingleWriter = true
-            });
+            var channel = Channel.CreateBounded<File>(OnlyLastMessage);
 
             async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(file, cancellationToken);
 
-            fw.Changed += NotifyOfChange;
-            fw.Created += NotifyOfChange;
-            fw.Deleted += NotifyOfChange;
+            try
+            {
+                fw.Changed += NotifyOfChange;
+                fw.Created += NotifyOfChange;
+                fw.Deleted += NotifyOfChange;
 
-            NotifyOfChange();
+                NotifyOfChange();
 
-            return channel.Reader.ReadAllAsync(cancellationToken);
+                await foreach (var f in channel.Reader.ReadAllAsync(cancellationToken))
+                {
+                    yield return f;
+                };
+            }
+            finally
+            {
+                fw.Changed -= NotifyOfChange;
+                fw.Created -= NotifyOfChange;
+                fw.Deleted -= NotifyOfChange;
+            }
         }
 
 
