@@ -21,12 +21,12 @@ public static class LiveExtensions
         SingleWriter = true
     };
 
-    private static IAsyncEnumerable<bool> Live(string path, string filter, bool allDirectories = false, CancellationToken cancellation = default)
+    private static IAsyncEnumerable<bool> Live(string path, string? filter = null, bool allDirectories = false, CancellationToken cancellation = default)
     {
-        using var fw = new IO.FileSystemWatcher(path, filter)
+        var fw = new IO.FileSystemWatcher(path, filter ?? "*")
         {
             EnableRaisingEvents = true,
-            IncludeSubdirectories = allDirectories
+            IncludeSubdirectories = allDirectories,
         };
         var channel = Channel.CreateBounded<bool>(onlyLastMessage);
 
@@ -43,10 +43,11 @@ public static class LiveExtensions
             fw.Changed -= NotifyOfChange;
             fw.Created -= NotifyOfChange;
             fw.Deleted -= NotifyOfChange;
+            fw.Dispose();
         });
     }
 
-    public static IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellation = default) => Live(directory.Path, "", allDirectories, cancellation);
+    public static IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellation = default) => Live(directory.Path, allDirectories: allDirectories, cancellation: cancellation);
     public static IAsyncEnumerable<bool> Live(this File file, CancellationToken cancellation = default) => Live(file.Parent.Path, file.Name, allDirectories: false, cancellation);
 
     public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted);
