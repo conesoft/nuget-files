@@ -40,18 +40,30 @@ namespace Conesoft.Files
             IO.Directory.Move(Path, target.Path);
         }
 
-        public virtual IEnumerable<File> Files => new IO.DirectoryInfo(path).EnumerateFiles().Select(File.From);
-        public IEnumerable<File> FilteredFiles(string filter, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFiles(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
+        public IEnumerable<File> FilteredFiles(string filter, bool allDirectories)
+        {
+            return new IO.DirectoryInfo(path)
+                .EnumerateFiles(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly)
+                .Select(File.From)
+                ;
+        }
 
-        public IEnumerable<Directory> FilteredDirectories(string filter, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateDirectories(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(Directory.From);
-        public IEnumerable<Entry> Filtered(string filter, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFileSystemInfos(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(Entry.From);
+        public IEnumerable<Directory> FilteredDirectories(string filter, bool allDirectories)
+        {
+            return new IO.DirectoryInfo(path)
+                .EnumerateDirectories(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly)
+                .Select(Directory.From)
+                ;
+        }
 
-        public Entry[] FilteredArray(string filter, bool allDirectories) => new IO.DirectoryInfo(path).GetFileSystemInfos(filter, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(Entry.From).ToArray();
+        public virtual IEnumerable<File> Files => FilteredFiles("*", false);
+        public virtual IEnumerable<Directory> Directories => FilteredDirectories("*", false);
+        public IEnumerable<Entry> Filtered(string filter, bool allDirectories) => FilteredDirectories(filter, allDirectories).Concat<Entry>(FilteredFiles(filter, allDirectories));
 
-        public IEnumerable<File> OfType(string extension, bool allDirectories) => new IO.DirectoryInfo(path).EnumerateFiles("*." + extension, allDirectories ? IO.SearchOption.AllDirectories : IO.SearchOption.TopDirectoryOnly).Select(File.From);
-        public virtual IEnumerable<File> AllFiles => Exists ? new IO.DirectoryInfo(path).EnumerateFiles("*", IO.SearchOption.AllDirectories).Select(File.From) : [];
+        public Entry[] FilteredArray(string filter, bool allDirectories) => Filtered(filter, allDirectories).ToArray();
 
-        public virtual IEnumerable<Directory> Directories => new IO.DirectoryInfo(path).EnumerateDirectories().Select(From);
+        public IEnumerable<File> OfType(string extension, bool allDirectories) => FilteredFiles("*." + extension, allDirectories);
+        public virtual IEnumerable<File> AllFiles => Exists ? FilteredFiles("*", true) : [];
 
         public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
         public static File operator /(Directory directory, Filename filename) => File.From(IO.Path.Combine(directory.path, filename.FilenameWithExtension));

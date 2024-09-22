@@ -12,8 +12,8 @@ namespace Conesoft.Files
             this.path = path;
         }
 
-        public static Entry From(string path) => new(path);
-        public static Entry From(IO.FileSystemInfo info) => new(info.FullName);
+        public static Entry From(string path) => IO.File.GetAttributes(path).HasFlag(IO.FileAttributes.Directory) ? Directory.From(path) : File.From(path);
+        public static Entry From(IO.FileSystemInfo info) => info.Attributes.HasFlag(IO.FileAttributes.Directory) ? Directory.From(info.FullName) : File.From(info.FullName);
 
         public virtual IO.FileSystemInfo? Info
         {
@@ -21,7 +21,8 @@ namespace Conesoft.Files
             {
                 try
                 {
-                    return IsFile ? AsFile!.Info : (IsDirectory ? AsDirectory!.Info : null);
+                    var info = new IO.FileInfo(path);
+                    return info.Attributes.HasFlag(IO.FileAttributes.Directory) ? new IO.DirectoryInfo(path) : info;
                 }
                 catch (NullReferenceException)
                 {
@@ -35,10 +36,10 @@ namespace Conesoft.Files
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? Directory.From(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
         public sealed override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
 
-        public bool IsFile => IO.File.Exists(path);
-        public bool IsDirectory => IO.Directory.Exists(path);
+        public bool IsFile => this is File;
+        public bool IsDirectory => this is Directory;
 
-        public File? AsFile => IsFile ? File.From(path) : null;
-        public Directory? AsDirectory => IsDirectory ? Directory.From(path) : null;
+        public File? AsFile => this as File;
+        public Directory? AsDirectory => this as Directory;
     }
 }
