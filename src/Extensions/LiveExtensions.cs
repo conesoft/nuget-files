@@ -50,7 +50,7 @@ public static class LiveExtensions
     public static IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellation = default) => Live(directory.Path, allDirectories: allDirectories, cancellation: cancellation);
     public static IAsyncEnumerable<bool> Live(this File file, CancellationToken cancellation = default) => Live(file.Parent.Path, file.Name, allDirectories: false, cancellation);
 
-    public record EntryChanges(Entry[] All, Entry[]? Changed, Entry[]? Added, Entry[]? Deleted);
+    public record EntryChanges(Entry[] All, Entry[] Changed, Entry[] Added, Entry[] Deleted);
 
     public static async IAsyncEnumerable<EntryChanges> Changes(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellation = default)
     {
