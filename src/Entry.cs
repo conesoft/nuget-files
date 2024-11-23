@@ -36,10 +36,10 @@ namespace Conesoft.Files
         public Directory Parent => IO.Path.GetDirectoryName(path) != null ? Directory.From(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
         public sealed override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
 
-        public bool IsFile => this is File;
-        public bool IsDirectory => this is Directory;
+        public bool IsFile => From(Path) is File;
+        public bool IsDirectory => From(Path) is Directory;
 
-        public File? AsFile => this as File;
-        public Directory? AsDirectory => this as Directory;
+        public File? AsFile => From(Path) as File;
+        public Directory? AsDirectory => From(Path) as Directory;
     }
 }
