@@ -8,7 +8,7 @@ namespace Conesoft.Files
     internal record EntryIncludingInfo : Entry
     {
         private readonly IO.FileSystemInfo info;
-        public EntryIncludingInfo(IO.FileSystemInfo info) : base(From(info.FullName))
+        public EntryIncludingInfo(IO.FileSystemInfo info) : base(From(info.FullName)!)
         {
             this.info = info;
         }

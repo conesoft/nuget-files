@@ -19,6 +19,10 @@ namespace Conesoft.Files
             {
                 return IO.File.GetAttributes(path).HasFlag(IO.FileAttributes.Directory) ? Directory.From(path) : File.From(path);
             }
+            catch(DirectoryNotFoundException)
+            {
+                return null;
+            }
             catch (FileNotFoundException)
             {
                 return null;
