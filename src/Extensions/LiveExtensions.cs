@@ -67,11 +67,6 @@ public static class LiveExtensions
                 null => lastModified.ContainsKey(e)
             }).ToArray();
 
-            Console.WriteLine("all: " + all.Length);
-            Console.WriteLine("added: " + string.Join(", ", added.Select(a => a.Name)));
-            Console.WriteLine("deleted: " + string.Join(", ", deleted.Select(a => a.Name)));
-            Console.WriteLine("changed: " + string.Join(", ", changed.Select(a => a.Name)));
-
             lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
 
             if (cancellation.IsCancellationRequested)
