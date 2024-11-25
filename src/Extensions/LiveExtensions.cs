@@ -50,15 +50,15 @@ public static class LiveExtensions
     public static IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellation = default) => Live(directory.Path, allDirectories: allDirectories, cancellation: cancellation);
     public static IAsyncEnumerable<bool> Live(this File file, CancellationToken cancellation = default) => Live(file.Parent.Path, file.Name, allDirectories: false, cancellation);
 
-    public record EntryChanges(Entry[] All, Entry[] Changed, Entry[] Added, Entry[] Deleted);
+    public record FileChanges(File[] All, File[] Changed, File[] Added, File[] Deleted);
 
-    public static async IAsyncEnumerable<EntryChanges> Changes(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellation = default)
+    public static async IAsyncEnumerable<FileChanges> Changes(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellation = default)
     {
-        Dictionary<Entry, DateTime> lastModified = [];
+        Dictionary<File, DateTime> lastModified = [];
 
         await foreach (var _ in directory.Live(allDirectories, cancellation).EndOnCancel(cancellation))
         {
-            var all = directory.FilteredArray("*", allDirectories);
+            var all = directory.FilteredFiles("*", allDirectories).ToArray();
             var added = all.Except(lastModified.Keys).ToArray();
             var deleted = lastModified.Keys.Except(all).ToArray();
             var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
@@ -66,6 +66,11 @@ public static class LiveExtensions
                 DateTime last => lastModified[e] < last,
                 null => lastModified.ContainsKey(e)
             }).ToArray();
+
+            Console.WriteLine("all: " + all.Length);
+            Console.WriteLine("added: " + string.Join(", ", added.Select(a => a.Name)));
+            Console.WriteLine("deleted: " + string.Join(", ", deleted.Select(a => a.Name)));
+            Console.WriteLine("changed: " + string.Join(", ", changed.Select(a => a.Name)));
 
             lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
 
