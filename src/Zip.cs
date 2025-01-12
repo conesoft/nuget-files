@@ -35,7 +35,7 @@ namespace Conesoft.Files
             get
             {
                 using var zip = Open();
-                return zip.Entries.Select(e => new Entry(e.Name, e.Length, e.CompressedLength, this)).ToArray();
+                return zip.Entries.Select(e => new Entry(e.Name, DirectoryNameOf(e), e.Length, e.CompressedLength, this)).ToArray();
             }
         }
 
@@ -63,7 +63,13 @@ namespace Conesoft.Files
             }
         }
 
-        public record Entry(string Name, long Size, long CompressedSize, Zip Parent)
+        private static string DirectoryNameOf(ZipArchiveEntry entry)
+        {
+            var path = entry.FullName.Replace(entry.Name, "");
+            return path == "" ? "/" : path[..^1];
+        }
+
+        public record Entry(string Name, string Path, long Size, long CompressedSize, Zip Parent)
         {
             public double CompressionRatio => (double)Size / CompressedSize;
 
