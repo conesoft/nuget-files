@@ -30,6 +30,15 @@ namespace Conesoft.Files
             ZipFile.ExtractToDirectory(Path, target.Path, overwriteFiles: true);
         }
 
+        public Entry[] Entries
+        {
+            get
+            {
+                using var zip = Open();
+                return zip.Entries.Select(e => new Entry(e.Name, e.Length, e.CompressedLength, this)).ToArray();
+            }
+        }
+
         public byte[] this[string name]
         {
             set
@@ -51,6 +60,17 @@ namespace Conesoft.Files
                     return memory.ToArray();
                 }
                 return [];
+            }
+        }
+
+        public record Entry(string Name, long Size, long CompressedSize, Zip Parent)
+        {
+            public double CompressionRatio => (double)Size / CompressedSize;
+
+            public byte[] Contents
+            {
+                get => Parent[Name];
+                set => Parent[Name] = value;
             }
         }
     }
