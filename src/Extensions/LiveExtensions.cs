@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Conesoft.Files.Try;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -30,7 +31,7 @@ public static class LiveExtensions
         };
         var channel = Channel.CreateBounded<bool>(onlyLastMessage);
 
-        async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await channel.Writer.WriteAsync(true, cancellation);
+        void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.TryAsync(async () => await channel.Writer.WriteAsync(true, cancellation));
 
         fw.Changed += NotifyOfChange;
         fw.Created += NotifyOfChange;
