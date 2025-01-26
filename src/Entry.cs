@@ -19,7 +19,7 @@ namespace Conesoft.Files
             {
                 return IO.File.GetAttributes(path).HasFlag(IO.FileAttributes.Directory) ? Directory.From(path) : File.From(path);
             }
-            catch(DirectoryNotFoundException)
+            catch (DirectoryNotFoundException)
             {
                 return null;
             }
@@ -30,31 +30,31 @@ namespace Conesoft.Files
         }
         public static Entry? From(IO.FileSystemInfo info) => info.Attributes.HasFlag(IO.FileAttributes.Directory) ? Directory.From(info.FullName) : File.From(info.FullName);
 
-    public virtual IO.FileSystemInfo? Info
-    {
-        get
+        public virtual IO.FileSystemInfo? Info
         {
-            try
+            get
             {
-                var info = new IO.FileInfo(path);
-                return info.Attributes.HasFlag(IO.FileAttributes.Directory) ? new IO.DirectoryInfo(path) : info;
-            }
-            catch (NullReferenceException)
-            {
-                return null;
+                try
+                {
+                    var info = new IO.FileInfo(path);
+                    return info.Attributes.HasFlag(IO.FileAttributes.Directory) ? new IO.DirectoryInfo(path) : info;
+                }
+                catch (NullReferenceException)
+                {
+                    return null;
+                }
             }
         }
+
+        public virtual string Name => IO.Path.GetFileName(path);
+        public string Path => path;
+        public Directory Parent => IO.Path.GetDirectoryName(path) != null ? Directory.From(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
+        public sealed override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
+
+        public virtual bool IsFile => From(Path) is File;
+        public virtual bool IsDirectory => From(Path) is Directory;
+
+        public virtual File? AsFile => From(Path) as File;
+        public virtual Directory? AsDirectory => From(Path) as Directory;
     }
-
-    public virtual string Name => IO.Path.GetFileName(path);
-    public string Path => path;
-    public Directory Parent => IO.Path.GetDirectoryName(path) != null ? Directory.From(IO.Path.GetDirectoryName(path)!) : Directory.Invalid;
-    public sealed override string ToString() => $"\"{Name}\" in \"{Parent.Path ?? Path}\"";
-
-    public bool IsFile => From(Path) is File;
-    public bool IsDirectory => From(Path) is Directory;
-
-    public File? AsFile => From(Path) as File;
-    public Directory? AsDirectory => From(Path) as Directory;
-}
 }
