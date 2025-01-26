@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -25,6 +26,46 @@ namespace Conesoft.Files
             return await JsonSerializer.DeserializeAsync<T>(stream, options ?? defaultOptions);
         });
 
+        public SyncWrapper Now => new(this);
+
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public class SyncWrapper(File my)
+        {
+            public string? ReadText() => my.Safe(() => IO.File.ReadAllText(my.Path));
+            public string[]? ReadLines() => my.Safe(() => IO.File.ReadAllLines(my.Path));
+            public byte[]? ReadBytes() => my.Safe(() => IO.File.ReadAllBytes(my.Path));
+            public T? ReadFromJson<T>(JsonSerializerOptions? options = null) => my.Safe(() => JsonSerializer.Deserialize<T>(ReadText()!, options ?? defaultOptions));
+
+            public void WriteText(string content)
+            {
+                my.Parent.Create();
+                IO.File.WriteAllText(my.Path, content);
+            }
+            public void WriteLines(IEnumerable<string> lines)
+            {
+                my.Parent.Create();
+                IO.File.WriteAllLines(my.Path, lines);
+            }
+            public void WriteBytes(byte[] content)
+            {
+                my.Parent.Create();
+                IO.File.WriteAllBytes(my.Path, content);
+            }
+
+            public void WriteAsJson<T>(T content, JsonSerializerOptions? options = null)
+            {
+                my.Parent.Create();
+                WriteText(JsonSerializer.Serialize(content, options ?? defaultOptions));
+            }
+
+            public void AppendText(string content)
+            {
+                my.Parent.Create();
+                IO.File.AppendAllText(my.Path, content);
+            }
+        }
+
         public IO.FileStream OpenRead() => IO.File.OpenRead(path);
 
         public async Task WriteText(string content)
@@ -33,16 +74,16 @@ namespace Conesoft.Files
             await IO.File.WriteAllTextAsync(path, content);
         }
 
-        public async Task WriteLines(IEnumerable<string> contents)
+        public async Task WriteLines(IEnumerable<string> lines)
         {
             Parent.Create();
-            await IO.File.WriteAllLinesAsync(path, contents);
+            await IO.File.WriteAllLinesAsync(path, lines);
         }
 
-        public async Task WriteBytes(byte[] contents)
+        public async Task WriteBytes(byte[] content)
         {
             Parent.Create();
-            await IO.File.WriteAllBytesAsync(path, contents);
+            await IO.File.WriteAllBytesAsync(path, content);
         }
 
         public async Task WriteAsJson<T>(T content, JsonSerializerOptions? options = null)
