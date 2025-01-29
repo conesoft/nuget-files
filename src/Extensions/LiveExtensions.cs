@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using IO = System.IO;
 
 namespace Conesoft.Files;
@@ -21,6 +22,100 @@ public static class LiveExtensions
         SingleReader = true,
         SingleWriter = true
     };
+
+    public static CancellationTokenSource Live(this Directory directory, Action action, bool allDirectories = false)
+    {
+        return Live(directory.Path, null, action, allDirectories);
+    }
+    public static CancellationTokenSource Live(this Directory directory, Func<Task> action, bool allDirectories = false)
+    {
+        return Live(directory.Path, null, action, allDirectories);
+    }
+
+    public static CancellationTokenSource Live(this IEnumerable<Directory> directories, Action action, bool allDirectories = false)
+    {
+        return CancellationTokenSource.CreateLinkedTokenSource(directories.Distinct().Select(directory => Live(directory.Path, null, action, allDirectories)).Select(cts => cts.Token).ToArray());
+    }
+    public static CancellationTokenSource Live(this IEnumerable<Directory> directories, Func<Task> action, bool allDirectories = false)
+    {
+        return CancellationTokenSource.CreateLinkedTokenSource(directories.Distinct().Select(directory => Live(directory.Path, null, action, allDirectories)).Select(cts => cts.Token).ToArray());
+    }
+
+    public static CancellationTokenSource Live(this File file, Action action, bool allDirectories = false)
+    {
+        return Live(file.Parent.Path, file.Name, action, allDirectories);
+    }
+    public static CancellationTokenSource Live(this File file, Func<Task> action, bool allDirectories = false)
+    {
+        return Live(file.Parent.Path, file.Name, action, allDirectories);
+    }
+
+    public static CancellationTokenSource Live(this IEnumerable<File> files, Action action, bool allDirectories = false)
+    {
+        return CancellationTokenSource.CreateLinkedTokenSource(files.Distinct().Select(file => Live(file.Parent.Path, file.Name, action, allDirectories)).Select(cts => cts.Token).ToArray());
+    }
+    public static CancellationTokenSource Live(this IEnumerable<File> files, Func<Task> action, bool allDirectories = false)
+    {
+        return CancellationTokenSource.CreateLinkedTokenSource(files.Distinct().Select(file => Live(file.Parent.Path, file.Name, action, allDirectories)).Select(cts => cts.Token).ToArray());
+    }
+
+    private static CancellationTokenSource Live(string path, string? filter, Action action, bool allDirectories)
+    {
+        var cts = new CancellationTokenSource();
+
+        var fw = new IO.FileSystemWatcher(path, filter ?? "*")
+        {
+            EnableRaisingEvents = true,
+            IncludeSubdirectories = allDirectories,
+        };
+
+        void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.Try(action);
+
+        fw.Changed += NotifyOfChange;
+        fw.Created += NotifyOfChange;
+        fw.Deleted += NotifyOfChange;
+
+        cts.Token.Register(() =>
+        {
+            fw.Changed -= NotifyOfChange;
+            fw.Created -= NotifyOfChange;
+            fw.Deleted -= NotifyOfChange;
+            fw.Dispose();
+        });
+
+        NotifyOfChange();
+
+        return cts;
+    }
+
+    private static CancellationTokenSource Live(string path, string? filter, Func<Task> action, bool allDirectories)
+    {
+        var cts = new CancellationTokenSource();
+
+        var fw = new IO.FileSystemWatcher(path, filter ?? "*")
+        {
+            EnableRaisingEvents = true,
+            IncludeSubdirectories = allDirectories,
+        };
+
+        void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.TryAsync(action);
+
+        fw.Changed += NotifyOfChange;
+        fw.Created += NotifyOfChange;
+        fw.Deleted += NotifyOfChange;
+
+        cts.Token.Register(() =>
+        {
+            fw.Changed -= NotifyOfChange;
+            fw.Created -= NotifyOfChange;
+            fw.Deleted -= NotifyOfChange;
+            fw.Dispose();
+        });
+
+        NotifyOfChange();
+
+        return cts;
+    }
 
     private static IAsyncEnumerable<bool> Live(string path, string? filter = null, bool allDirectories = false, CancellationToken cancellation = default)
     {
