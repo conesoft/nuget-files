@@ -13,6 +13,18 @@ namespace Conesoft.Files
             this.path = path;
         }
 
+        public virtual bool Equals(Entry? other)
+        {
+            if (other == null) return false;
+
+            var a = IO.Path.GetFullPath(this.path);
+            var b = IO.Path.GetFullPath(other.path);
+
+            return a.Equals(b, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override int GetHashCode() => path.GetHashCode();
+
         public static Entry? From(string path)
         {
             try
