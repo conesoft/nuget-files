@@ -1,13 +1,6 @@
-﻿using Conesoft.Files.Try;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
-using IO = System.IO;
 
 namespace Conesoft.Files;
 
@@ -98,7 +91,7 @@ public static class LiveExtensions
             IncludeSubdirectories = allDirectories,
         };
 
-        void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.TryAsync(action);
+        async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await Safe.TryAsync(action);
 
         fw.Changed += NotifyOfChange;
         fw.Created += NotifyOfChange;

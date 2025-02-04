@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using IO = System.IO;
 
 namespace Conesoft.Files;
 
@@ -29,6 +28,5 @@ public static class BatchHandlerExtensions
     public static IEnumerable<File> Files(this IEnumerable<Entry> entries) => entries.Select(e => e.AsFile).NotNull();
     public static IEnumerable<Directory> Directories(this IEnumerable<Entry> entries) => entries.Select(e => e.AsDirectory).NotNull();
 
-    public static IEnumerable<File> Visible(this IEnumerable<File> files) => files.Where(f => f.Info.Attributes.HasFlag(IO.FileAttributes.Hidden) == false);
-    public static IEnumerable<Directory> Visible(this IEnumerable<Directory> directories) => directories.Where(f => f.Info.Attributes.HasFlag(IO.FileAttributes.Hidden) == false);
+    public static IEnumerable<T> Visible<T>(this IEnumerable<T> entries) where T : Entry => entries.Where(f => f.Visible);
 }
