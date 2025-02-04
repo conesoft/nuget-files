@@ -12,7 +12,7 @@ public record Entry
     public static Entry? From(string path) => Safe.Try<Entry, IO.DirectoryNotFoundException, IO.FileNotFoundException>(() => IsDir(path) ? Directory.From(path) : File.From(path));
     public static Entry? From(IO.FileSystemInfo info) => info.Attributes.HasFlag(IO.FileAttributes.Directory) ? Directory.From(info.FullName) : File.From(info.FullName);
 
-    public string Name => IO.Path.GetFileName(path);
+    public virtual string Name => IO.Path.GetFileName(path);
     public string NameWithoutExtension => IO.Path.GetFileNameWithoutExtension(path);
     public string? Extension => IO.Path.GetExtension(path)?[1..];
     public string Path => path;
@@ -61,8 +61,8 @@ public record Entry
     public bool IsFile => IsDir(path) == false;
     public bool IsDirectory => IsDir(path);
 
-    public File? AsFile => IsDir(path) == false ? File.From(Path) : null;
-    public Directory? AsDirectory => IsDir(path) ? Directory.From(Path) : null;
+    public virtual File? AsFile => IsDir(path) == false ? File.From(Path) : null;
+    public virtual Directory? AsDirectory => IsDir(path) ? Directory.From(Path) : null;
 
     public bool Visible
     {
