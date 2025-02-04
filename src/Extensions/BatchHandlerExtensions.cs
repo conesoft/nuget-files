@@ -1,10 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-namespace Conesoft.Files;
+﻿namespace Conesoft.Files;
 
 [Browsable(false)]
 [EditorBrowsable(EditorBrowsableState.Never)]
