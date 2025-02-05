@@ -59,6 +59,7 @@ public static class LiveExtensions
         var fw = new IO.FileSystemWatcher(path, filter ?? "*")
         {
             EnableRaisingEvents = true,
+            NotifyFilter = IO.NotifyFilters.LastWrite | IO.NotifyFilters.FileName | IO.NotifyFilters.DirectoryName,
             IncludeSubdirectories = allDirectories,
         };
 
@@ -90,6 +91,7 @@ public static class LiveExtensions
         var fw = new IO.FileSystemWatcher(path, filter ?? "*")
         {
             EnableRaisingEvents = true,
+            NotifyFilter = IO.NotifyFilters.LastWrite | IO.NotifyFilters.FileName | IO.NotifyFilters.DirectoryName,
             IncludeSubdirectories = allDirectories,
         };
 
@@ -119,6 +121,7 @@ public static class LiveExtensions
         var fw = new IO.FileSystemWatcher(path, filter ?? "*")
         {
             EnableRaisingEvents = true,
+            NotifyFilter = IO.NotifyFilters.LastWrite | IO.NotifyFilters.FileName | IO.NotifyFilters.DirectoryName,
             IncludeSubdirectories = allDirectories,
         };
         var channel = Channel.CreateBounded<bool>(onlyLastMessage);
