@@ -64,14 +64,16 @@ public static class LiveExtensions
 
         void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.Try(action);
 
-        fw.Changed += NotifyOfChange;
         fw.Created += NotifyOfChange;
+        fw.Renamed += NotifyOfChange;
+        fw.Changed += NotifyOfChange;
         fw.Deleted += NotifyOfChange;
 
         cts.Token.Register(() =>
         {
-            fw.Changed -= NotifyOfChange;
             fw.Created -= NotifyOfChange;
+            fw.Renamed -= NotifyOfChange;
+            fw.Changed -= NotifyOfChange;
             fw.Deleted -= NotifyOfChange;
             fw.Dispose();
         });
@@ -93,14 +95,16 @@ public static class LiveExtensions
 
         async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await Safe.TryAsync(action);
 
-        fw.Changed += NotifyOfChange;
         fw.Created += NotifyOfChange;
+        fw.Renamed += NotifyOfChange;
+        fw.Changed += NotifyOfChange;
         fw.Deleted += NotifyOfChange;
 
         cts.Token.Register(() =>
         {
-            fw.Changed -= NotifyOfChange;
             fw.Created -= NotifyOfChange;
+            fw.Renamed -= NotifyOfChange;
+            fw.Changed -= NotifyOfChange;
             fw.Deleted -= NotifyOfChange;
             fw.Dispose();
         });
@@ -121,16 +125,18 @@ public static class LiveExtensions
 
         void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.TryAsync(async () => await channel.Writer.WriteAsync(true, cancellation));
 
-        fw.Changed += NotifyOfChange;
         fw.Created += NotifyOfChange;
+        fw.Renamed += NotifyOfChange;
+        fw.Changed += NotifyOfChange;
         fw.Deleted += NotifyOfChange;
 
         NotifyOfChange();
 
         return channel.Reader.ReadAllAsync(cancellation).EndOnCancel(cancellation, whenDone: () =>
         {
-            fw.Changed -= NotifyOfChange;
             fw.Created -= NotifyOfChange;
+            fw.Renamed -= NotifyOfChange;
+            fw.Changed -= NotifyOfChange;
             fw.Deleted -= NotifyOfChange;
             fw.Dispose();
         });
