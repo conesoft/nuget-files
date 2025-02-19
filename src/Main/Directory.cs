@@ -16,7 +16,14 @@ public record Directory : Entry
 
     public new virtual IO.DirectoryInfo Info => new(path);
     public override bool Exists => IO.Directory.Exists(path);
-    public override void Delete() => Safe.Try<IO.DirectoryNotFoundException>(() => IO.Directory.Delete(path, recursive: true));
+    public override Task Delete() => Safe.TryAsync<IO.DirectoryNotFoundException>(async () =>
+    {
+        IO.Directory.Delete(path, recursive: true);
+        while (IO.Directory.Exists(path) == true)
+        {
+            await Task.Delay(10);
+        }
+    });
 
     public void Create() => IO.Directory.CreateDirectory(path);
 

@@ -42,4 +42,6 @@ public class SyncWrapper(File my)
 
     public void AppendLine(string line) => AppendText(line + Environment.NewLine);
     #endregion
+
+    public void Delete() => IO.File.Delete(my.Path);
 }

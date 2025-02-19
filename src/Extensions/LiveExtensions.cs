@@ -2,97 +2,35 @@
 using System.Threading;
 using System.Threading.Channels;
 
+using CTS = System.Threading.CancellationTokenSource;
+
 namespace Conesoft.Files;
 
 [Browsable(false)]
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class LiveExtensions
 {
-    private static readonly BoundedChannelOptions onlyLastMessage = new(1)
-    {
-        AllowSynchronousContinuations = true,
-        FullMode = BoundedChannelFullMode.DropOldest,
-        SingleReader = true,
-        SingleWriter = true
-    };
+    public static CTS Live(this IEnumerable<Entry> entries, Action action, bool all = false, CTS? previous = default) => entries.Live(WrapAction(action), all, previous);
+    public static CTS Live(this Entry entry, Action action, bool all = false, CTS? previous = default) => entry.Live(WrapAction(action), all, previous);
 
-    public static CancellationTokenSource Live(this Directory directory, Action action, bool allDirectories = false)
+    public static CTS Live(this IEnumerable<Entry> entries, Func<Task> action, bool all = false, CTS? previous = default)
     {
-        return Live(directory.Path, null, action, allDirectories);
-    }
-    public static CancellationTokenSource Live(this Directory directory, Func<Task> action, bool allDirectories = false)
-    {
-        return Live(directory.Path, null, action, allDirectories);
+        var tokens = entries.Distinct().Select(entry => entry.Live(action, all, previous)).Select(cts => cts.Token).ToArray();
+        return previous ?? CTS.CreateLinkedTokenSource(tokens);
     }
 
-    public static CancellationTokenSource Live(this IEnumerable<Directory> directories, Action action, bool allDirectories = false)
+    public static CTS Live(this Entry entry, Func<Task> action, bool all = false, CTS? previous = default)
     {
-        return CancellationTokenSource.CreateLinkedTokenSource(directories.Distinct().Select(directory => Live(directory.Path, null, action, allDirectories)).Select(cts => cts.Token).ToArray());
-    }
-    public static CancellationTokenSource Live(this IEnumerable<Directory> directories, Func<Task> action, bool allDirectories = false)
-    {
-        return CancellationTokenSource.CreateLinkedTokenSource(directories.Distinct().Select(directory => Live(directory.Path, null, action, allDirectories)).Select(cts => cts.Token).ToArray());
-    }
+        var cts = previous ?? new CTS();
 
-    public static CancellationTokenSource Live(this File file, Action action, bool allDirectories = false)
-    {
-        return Live(file.Parent.Path, file.Name, action, allDirectories);
-    }
-    public static CancellationTokenSource Live(this File file, Func<Task> action, bool allDirectories = false)
-    {
-        return Live(file.Parent.Path, file.Name, action, allDirectories);
-    }
+        var path = entry.IsDirectory ? entry.Path : entry.Parent.Path;
+        var filter = entry.IsDirectory ? "*" : entry.Name;
 
-    public static CancellationTokenSource Live(this IEnumerable<File> files, Action action, bool allDirectories = false)
-    {
-        return CancellationTokenSource.CreateLinkedTokenSource(files.Distinct().Select(file => Live(file.Parent.Path, file.Name, action, allDirectories)).Select(cts => cts.Token).ToArray());
-    }
-    public static CancellationTokenSource Live(this IEnumerable<File> files, Func<Task> action, bool allDirectories = false)
-    {
-        return CancellationTokenSource.CreateLinkedTokenSource(files.Distinct().Select(file => Live(file.Parent.Path, file.Name, action, allDirectories)).Select(cts => cts.Token).ToArray());
-    }
-
-    private static CancellationTokenSource Live(string path, string? filter, Action action, bool allDirectories)
-    {
-        var cts = new CancellationTokenSource();
-
-        var fw = new IO.FileSystemWatcher(path, filter ?? "*")
+        var fw = new IO.FileSystemWatcher(path, filter)
         {
             EnableRaisingEvents = true,
             NotifyFilter = IO.NotifyFilters.Attributes | IO.NotifyFilters.LastWrite | IO.NotifyFilters.FileName | IO.NotifyFilters.DirectoryName,
-            IncludeSubdirectories = allDirectories,
-        };
-
-        void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.Try(action);
-
-        fw.Created += NotifyOfChange;
-        fw.Renamed += NotifyOfChange;
-        fw.Changed += NotifyOfChange;
-        fw.Deleted += NotifyOfChange;
-
-        cts.Token.Register(() =>
-        {
-            fw.Created -= NotifyOfChange;
-            fw.Renamed -= NotifyOfChange;
-            fw.Changed -= NotifyOfChange;
-            fw.Deleted -= NotifyOfChange;
-            fw.Dispose();
-        });
-
-        NotifyOfChange();
-
-        return cts;
-    }
-
-    private static CancellationTokenSource Live(string path, string? filter, Func<Task> action, bool allDirectories)
-    {
-        var cts = new CancellationTokenSource();
-
-        var fw = new IO.FileSystemWatcher(path, filter ?? "*")
-        {
-            EnableRaisingEvents = true,
-            NotifyFilter = IO.NotifyFilters.Attributes | IO.NotifyFilters.LastWrite | IO.NotifyFilters.FileName | IO.NotifyFilters.DirectoryName,
-            IncludeSubdirectories = allDirectories,
+            IncludeSubdirectories = all,
         };
 
         async void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => await Safe.TryAsync(action);
@@ -116,6 +54,23 @@ public static class LiveExtensions
         return cts;
     }
 
+    private static Func<Task> WrapAction(Action action) => () =>
+    {
+        action();
+        return Task.CompletedTask;
+    };
+
+    #region Obsolete
+    [Obsolete]
+    private static readonly BoundedChannelOptions onlyLastMessage = new(1)
+    {
+        AllowSynchronousContinuations = true,
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = true
+    };
+
+    [Obsolete]
     private static IAsyncEnumerable<bool> Live(string path, string? filter = null, bool allDirectories = false, CancellationToken cancellation = default)
     {
         var fw = new IO.FileSystemWatcher(path, filter ?? "*")
@@ -145,11 +100,16 @@ public static class LiveExtensions
         });
     }
 
+    [Obsolete]
     public static IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellation = default) => Live(directory.Path, allDirectories: allDirectories, cancellation: cancellation);
+
+    [Obsolete]
     public static IAsyncEnumerable<bool> Live(this File file, CancellationToken cancellation = default) => Live(file.Parent.Path, file.Name, allDirectories: false, cancellation);
 
+    [Obsolete]
     public record FileChanges(File[] All, File[] Changed, File[] Added, File[] Deleted);
 
+    [Obsolete]
     public static async IAsyncEnumerable<FileChanges> Changes(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellation = default)
     {
         Dictionary<File, DateTime> lastModified = [];
@@ -180,4 +140,5 @@ public static class LiveExtensions
             );
         }
     }
+    #endregion
 }

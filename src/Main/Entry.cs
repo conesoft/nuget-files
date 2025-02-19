@@ -34,10 +34,17 @@ public record Entry
     });
 
     public virtual bool Exists => ExistsAs(path).HasValue;
-    public virtual void Delete()
+    public virtual Task Delete()
     {
-        AsFile?.Delete();
-        AsDirectory?.Delete();
+        if(AsFile is File file)
+        {
+            return file.Delete();
+        }
+        if(AsDirectory is Directory directory)
+        {
+            return directory.Delete();
+        }
+        return Task.CompletedTask;
     }
 
     public Entry? Rename(Filename newName)

@@ -62,7 +62,14 @@ public record File : Entry
 
     public new virtual IO.FileInfo Info => new(path);
     public override bool Exists => IO.File.Exists(path);
-    public override void Delete() => Safe.Try(() => IO.File.Delete(path));
+    public override Task Delete() => Safe.TryAsync(async () =>
+    {
+        IO.File.Delete(path);
+        while(IO.File.Exists(path) == true)
+        {
+            await Task.Delay(10);
+        }
+    });
 
     public File WhenReady => this.WhenReady();
 
