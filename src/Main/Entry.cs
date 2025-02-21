@@ -99,11 +99,11 @@ public record Entry
         {
             if (value)
             {
-                IO.File.SetAttributes(path, IO.File.GetAttributes(path) | IO.FileAttributes.Hidden);
+                IO.File.SetAttributes(path, IO.File.GetAttributes(path) & ~IO.FileAttributes.Hidden);
             }
             else
             {
-                IO.File.SetAttributes(path, IO.File.GetAttributes(path) & ~IO.FileAttributes.Hidden);
+                IO.File.SetAttributes(path, IO.File.GetAttributes(path) | IO.FileAttributes.Hidden);
             }
         }
     }
