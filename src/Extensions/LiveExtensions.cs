@@ -1,7 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Channels;
-
+﻿using CT = System.Threading.CancellationToken;
 using CTS = System.Threading.CancellationTokenSource;
 
 namespace Conesoft.Files;
@@ -10,18 +7,28 @@ namespace Conesoft.Files;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class LiveExtensions
 {
-    public static CTS Live(this IEnumerable<Entry> entries, Action action, bool all = false, CTS? previous = default) => entries.Live(WrapAction(action), all, previous);
-    public static CTS Live(this Entry entry, Action action, bool all = false, CTS? previous = default) => entry.Live(WrapAction(action), all, previous);
+    public static void Live(this IEnumerable<Entry> entries, Action action, CT cancellation, bool all = false) => entries.LiveImplementation(WrapAction(action), all, cancellation);
+    public static CTS Live(this IEnumerable<Entry> entries, Action action, bool all = false) => entries.LiveImplementation(WrapAction(action), all)!;
 
-    public static CTS Live(this IEnumerable<Entry> entries, Func<Task> action, bool all = false, CTS? previous = default)
+    public static void Live(this IEnumerable<Entry> entries, Func<Task> action, CT cancellation, bool all = false) => entries.LiveImplementation(action, all, cancellation);
+    public static CTS Live(this IEnumerable<Entry> entries, Func<Task> action, bool all = false) => entries.LiveImplementation(action, all)!;
+
+    public static void Live(this Entry entry, Action action, CT cancellation, bool all = false) => entry.LiveImplementation(WrapAction(action), all, cancellation);
+    public static CTS Live(this Entry entry, Action action, bool all = false) => entry.LiveImplementation(WrapAction(action), all)!;
+
+    public static void Live(this Entry entry, Func<Task> action, CT cancellation, bool all = false) => entry.LiveImplementation(action, all, cancellation);
+    public static CTS Live(this Entry entry, Func<Task> action, bool all = false) => entry.LiveImplementation(action, all)!;
+
+    static CTS? LiveImplementation(this IEnumerable<Entry> entries, Func<Task> action, bool all = false, CT? previous = default)
     {
-        var tokens = entries.Distinct().Select(entry => entry.Live(action, all, previous)).Select(cts => cts.Token).ToArray();
-        return previous ?? CTS.CreateLinkedTokenSource(tokens);
+        var tokens = entries.Distinct().Select(entry => entry.LiveImplementation(action, all, previous)).NotNull().Select(cts => cts.Token).ToArray();
+        return tokens.Length > 0 ? CTS.CreateLinkedTokenSource(tokens) : null;
     }
 
-    public static CTS Live(this Entry entry, Func<Task> action, bool all = false, CTS? previous = default)
+    static CTS? LiveImplementation(this Entry entry, Func<Task> action, bool all = false, CT? previous = default)
     {
-        var cts = previous ?? new CTS();
+        var cts = previous != null ? new CTS() : null;
+        var ct = previous ?? cts!.Token;
 
         var path = entry.IsDirectory ? entry.Path : entry.Parent.Path;
         var filter = entry.IsDirectory ? "*" : entry.Name;
@@ -40,7 +47,7 @@ public static class LiveExtensions
         fw.Changed += NotifyOfChange;
         fw.Deleted += NotifyOfChange;
 
-        cts.Token.Register(() =>
+        ct.Register(() =>
         {
             fw.Created -= NotifyOfChange;
             fw.Renamed -= NotifyOfChange;
@@ -54,69 +61,22 @@ public static class LiveExtensions
         return cts;
     }
 
-    private static Func<Task> WrapAction(Action action) => () =>
-    {
-        action();
-        return Task.CompletedTask;
-    };
+    public static void Changes(this Directory directory, Action<EntryChanges> action, CT cancellation, bool all = false) => directory.ChangesImplementation(WrapAction(action), all, cancellation);
+    public static CTS Changes(this Directory directory, Action<EntryChanges> action, bool all = false) => directory.ChangesImplementation(WrapAction(action), all)!;
 
-    #region Obsolete
-    [Obsolete]
-    private static readonly BoundedChannelOptions onlyLastMessage = new(1)
-    {
-        AllowSynchronousContinuations = true,
-        FullMode = BoundedChannelFullMode.DropOldest,
-        SingleReader = true,
-        SingleWriter = true
-    };
+    public static void Changes(this Directory directory, Func<EntryChanges, Task> action, CT cancellation, bool all = false) => directory.ChangesImplementation(action, all, cancellation);
+    public static CTS Changes(this Directory directory, Func<EntryChanges, Task> action, bool all = false) => directory.ChangesImplementation(action, all)!;
 
-    [Obsolete]
-    private static IAsyncEnumerable<bool> Live(string path, string? filter = null, bool allDirectories = false, CancellationToken cancellation = default)
+
+    public record EntryChanges(Entry[] All, Entry[] Changed, Entry[] Added, Entry[] Deleted);
+
+    static CTS? ChangesImplementation(this Directory directory, Func<EntryChanges, Task> action, bool subDirectories = false, CT? previous = default)
     {
-        var fw = new IO.FileSystemWatcher(path, filter ?? "*")
+        Dictionary<Entry, DateTime> lastModified = [];
+
+        return directory.LiveImplementation(async () =>
         {
-            EnableRaisingEvents = true,
-            NotifyFilter = IO.NotifyFilters.Attributes | IO.NotifyFilters.LastWrite | IO.NotifyFilters.FileName | IO.NotifyFilters.DirectoryName,
-            IncludeSubdirectories = allDirectories,
-        };
-        var channel = Channel.CreateBounded<bool>(onlyLastMessage);
-
-        void NotifyOfChange(object? _ = null, IO.FileSystemEventArgs? e = null) => Safe.TryAsync(async () => await channel.Writer.WriteAsync(true, cancellation));
-
-        fw.Created += NotifyOfChange;
-        fw.Renamed += NotifyOfChange;
-        fw.Changed += NotifyOfChange;
-        fw.Deleted += NotifyOfChange;
-
-        NotifyOfChange();
-
-        return channel.Reader.ReadAllAsync(cancellation).EndOnCancel(cancellation, whenDone: () =>
-        {
-            fw.Created -= NotifyOfChange;
-            fw.Renamed -= NotifyOfChange;
-            fw.Changed -= NotifyOfChange;
-            fw.Deleted -= NotifyOfChange;
-            fw.Dispose();
-        });
-    }
-
-    [Obsolete]
-    public static IAsyncEnumerable<bool> Live(this Directory directory, bool allDirectories = false, CancellationToken cancellation = default) => Live(directory.Path, allDirectories: allDirectories, cancellation: cancellation);
-
-    [Obsolete]
-    public static IAsyncEnumerable<bool> Live(this File file, CancellationToken cancellation = default) => Live(file.Parent.Path, file.Name, allDirectories: false, cancellation);
-
-    [Obsolete]
-    public record FileChanges(File[] All, File[] Changed, File[] Added, File[] Deleted);
-
-    [Obsolete]
-    public static async IAsyncEnumerable<FileChanges> Changes(this Directory directory, bool allDirectories = false, [EnumeratorCancellation] CancellationToken cancellation = default)
-    {
-        Dictionary<File, DateTime> lastModified = [];
-
-        await foreach (var _ in directory.Live(allDirectories, cancellation).EndOnCancel(cancellation))
-        {
-            var all = directory.FilteredFiles("*", allDirectories).ToArray();
+            var all = directory.Filtered("*", subDirectories).ToArray();
             var added = all.Except(lastModified.Keys).ToArray();
             var deleted = lastModified.Keys.Except(all).ToArray();
             var changed = all.Except(added).Where(e => e.Info?.LastWriteTime switch
@@ -127,18 +87,24 @@ public static class LiveExtensions
 
             lastModified = all.ToValidDictionaryValues(entry => entry.Info?.LastWriteTime);
 
-            if (cancellation.IsCancellationRequested)
-            {
-                yield break;
-            }
-
-            yield return new(
+            await action(new(
                 All: all,
                 Changed: changed,
                 Added: added,
                 Deleted: deleted
-            );
-        }
+            ));
+        }, subDirectories, previous);
     }
-    #endregion
+
+    private static Func<Task> WrapAction(Action action) => () =>
+    {
+        action();
+        return Task.CompletedTask;
+    };
+
+    private static Func<T, Task> WrapAction<T>(Action<T> action) => value =>
+    {
+        action(value);
+        return Task.CompletedTask;
+    };
 }
