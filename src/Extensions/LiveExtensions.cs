@@ -27,7 +27,7 @@ public static class LiveExtensions
 
     static CTS? LiveImplementation(this Entry entry, Func<Task> action, bool all = false, CT? previous = default)
     {
-        var cts = previous != null ? new CTS() : null;
+        var cts = previous == null ? new CTS() : null;
         var ct = previous ?? cts!.Token;
 
         var path = entry.IsDirectory ? entry.Path : entry.Parent.Path;
