@@ -57,5 +57,5 @@ public record Directory : Entry
     #endregion
 
     public static Directory operator /(Directory directory, string subdirectory) => directory.SubDirectory(subdirectory);
-    public static File operator /(Directory directory, Filename filename) => File.From(IO.Path.Combine(directory.path, filename.FilenameWithExtension));
+    public static File operator /(Directory directory, Filename filename) => File.From(IO.Path.Combine(directory.path, filename.Subpath ?? "", filename.FilenameWithExtension));
 }
